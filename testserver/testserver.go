@@ -32,10 +32,10 @@ func (handler *Handler) Query(target string, _ *grafana_json.QueryRequest) (resp
 	response.DataPoints = make([]grafana_json.QueryResponseDataPoint, 0)
 
 	for i := 0; i < 100; i++ {
-		response.DataPoints = append(response.DataPoints, grafana_json.QueryResponseDataPoint{
+		response.DataPoints[i] = grafana_json.QueryResponseDataPoint{
 			Timestamp: timestamp,
 			Value:     int64(i),
-		})
+		}
 		timestamp = timestamp.Add(1 * time.Second)
 	}
 	return
