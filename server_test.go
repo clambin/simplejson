@@ -176,6 +176,48 @@ func BenchmarkAPIServer(b *testing.B) {
 
 }
 
+func TestAPIServer_Annotations(t *testing.T) {
+	handler := testAPIHandler{}
+	s := grafana_json.Create(endpoints(&handler), 8084)
+
+	go func() {
+		err := s.Run()
+
+		assert.Nil(t, err)
+	}()
+
+	assert.Eventually(t, func() bool {
+		body, err := call("http://localhost:8084/", "GET", "")
+		if assert.Nil(t, err) {
+			return assert.Equal(t, "Hello", body)
+		}
+		return false
+	}, 500*time.Millisecond, 10*time.Millisecond)
+
+	body, err := call("http://localhost:8084/annotations", "OPTIONS", "")
+
+	assert.Nil(t, err)
+	assert.Equal(t, "", body)
+
+	req := `{
+	"range": {
+		"from": "2020-01-01T00:00:00.000Z",
+		"to": "2020-12-31T00:00:00.000Z"
+	},
+	"annotation": {
+		"name": "snafu",
+		"datasource": "fubar",
+		"enable": true,
+		"query": ""
+	}
+}`
+	body, err = call("http://localhost:8084/annotations", "POST", req)
+
+	if assert.Nil(t, err) {
+		assert.Equal(t, `[{"annotation":{"name":"snafu","datasource":"fubar","enable":true,"query":""},"time":1609459200000,"title":"snafu","text":"bar","tags":["snafu"]}]`, body)
+	}
+}
+
 func call(url, method, body string) (response string, err error) {
 	client := &http.Client{}
 	reqBody := bytes.NewBuffer([]byte(body))
@@ -206,9 +248,10 @@ type testAPIHandler struct {
 
 func endpoints(handler *testAPIHandler) grafana_json.Handler {
 	return grafana_json.Handler{
-		Search:     handler.Search,
-		Query:      handler.Query,
-		TableQuery: handler.TableQuery,
+		Search:      handler.Search,
+		Query:       handler.Query,
+		TableQuery:  handler.TableQuery,
+		Annotations: handler.Annotations,
 	}
 }
 
@@ -258,5 +301,15 @@ func (handler *testAPIHandler) TableQuery(target string, _ *grafana_json.TableQu
 	default:
 		err = fmt.Errorf("not implemented")
 	}
+	return
+}
+
+func (handler *testAPIHandler) Annotations(annotation string, _ *grafana_json.AnnotationRequestArgs) (annotations []grafana_json.Annotation, err error) {
+	annotations = append(annotations, grafana_json.Annotation{
+		Time:  time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
+		Title: annotation,
+		Text:  "bar",
+		Tags:  []string{"snafu"},
+	})
 	return
 }

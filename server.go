@@ -19,9 +19,10 @@ type Server struct {
 // Handler implement the business logic of the Grafana API datasource so that
 // Server can be limited to providing the generic search/query framework
 type Handler struct {
-	Search     func() []string
-	Query      func(target string, args *TimeSeriesQueryArgs) (*QueryResponse, error)
-	TableQuery func(target string, args *TableQueryArgs) (*TableQueryResponse, error)
+	Search      func() []string
+	Query       func(target string, args *TimeSeriesQueryArgs) (*QueryResponse, error)
+	TableQuery  func(target string, args *TableQueryArgs) (*TableQueryResponse, error)
+	Annotations func(annotation string, args *AnnotationRequestArgs) ([]Annotation, error)
 }
 
 // Create creates a Server object
@@ -35,9 +36,15 @@ func (server *Server) Run() error {
 	r.Use(prometheusMiddleware)
 	r.Path("/metrics").Handler(promhttp.Handler())
 	r.HandleFunc("/", server.hello)
-	r.HandleFunc("/search", server.search).Methods("POST")
-	r.HandleFunc("/query", server.query).Methods("POST")
-
+	if server.handler.Search != nil {
+		r.HandleFunc("/search", server.search).Methods("POST")
+	}
+	if server.handler.Query != nil || server.handler.TableQuery != nil {
+		r.HandleFunc("/query", server.query).Methods("POST")
+	}
+	if server.handler.Annotations != nil {
+		r.HandleFunc("/annotations", server.annotations).Methods("POST", "OPTIONS")
+	}
 	return http.ListenAndServe(fmt.Sprintf(":%d", server.port), r)
 }
 

@@ -3,17 +3,20 @@ package main
 import (
 	"errors"
 	"github.com/clambin/grafana-json"
+	log "github.com/sirupsen/logrus"
 	"time"
 )
 
 func main() {
 	handler := grafana_json.Handler{
-		Search:     Search,
-		Query:      Query,
-		TableQuery: TableQuery,
+		Search:      Search,
+		Query:       Query,
+		TableQuery:  TableQuery,
+		Annotations: Annotations,
 	}
-	s := grafana_json.Create(handler, 8081)
+	s := grafana_json.Create(handler, 8088)
 
+	log.SetLevel(log.DebugLevel)
 	_ = s.Run()
 }
 
@@ -27,17 +30,16 @@ func Query(target string, _ *grafana_json.TimeSeriesQueryArgs) (response *grafan
 		return
 	}
 
-	timestamp := time.Now().Add(-1 * time.Hour)
-
 	response = new(grafana_json.QueryResponse)
-	response.DataPoints = make([]grafana_json.QueryResponseDataPoint, 0)
+	response.DataPoints = make([]grafana_json.QueryResponseDataPoint, 60)
 
-	for i := 0; i < 100; i++ {
+	timestamp := time.Now().Add(-1 * time.Hour)
+	for i := 0; i < 60; i++ {
 		response.DataPoints[i] = grafana_json.QueryResponseDataPoint{
 			Timestamp: timestamp,
 			Value:     int64(i),
 		}
-		timestamp = timestamp.Add(1 * time.Second)
+		timestamp = timestamp.Add(1 * time.Minute)
 	}
 	return
 }
@@ -45,18 +47,19 @@ func Query(target string, _ *grafana_json.TimeSeriesQueryArgs) (response *grafan
 func TableQuery(target string, _ *grafana_json.TableQueryArgs) (response *grafana_json.TableQueryResponse, err error) {
 	if target != "table" {
 		err = errors.New("unsupported series")
+		return
 	}
 
-	timestamps := make(grafana_json.TableQueryResponseTimeColumn, 100)
-	seriesA := make(grafana_json.TableQueryResponseNumberColumn, 100)
-	seriesB := make(grafana_json.TableQueryResponseNumberColumn, 100)
+	timestamps := make(grafana_json.TableQueryResponseTimeColumn, 60)
+	seriesA := make(grafana_json.TableQueryResponseNumberColumn, 60)
+	seriesB := make(grafana_json.TableQueryResponseNumberColumn, 60)
 
 	timestamp := time.Now().Add(-1 * time.Hour)
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 60; i++ {
 		timestamps[i] = timestamp
 		seriesA[i] = float64(i)
 		seriesB[i] = float64(-i)
-		timestamp = timestamp.Add(1 * time.Second)
+		timestamp = timestamp.Add(1 * time.Minute)
 	}
 
 	response = new(grafana_json.TableQueryResponse)
@@ -74,5 +77,15 @@ func TableQuery(target string, _ *grafana_json.TableQueryArgs) (response *grafan
 			Data: seriesB,
 		},
 	}
+	return
+}
+
+func Annotations(_ string, _ *grafana_json.AnnotationRequestArgs) (annotations []grafana_json.Annotation, err error) {
+	annotations = append(annotations, grafana_json.Annotation{
+		Time:  time.Now().Add(-5 * time.Minute),
+		Title: "foo",
+		Text:  "bar",
+	})
+
 	return
 }

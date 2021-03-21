@@ -6,6 +6,8 @@ import (
 	"time"
 )
 
+// Query (timeserie)
+
 type QueryResponse struct {
 	Target     string                   `json:"target"`
 	DataPoints []QueryResponseDataPoint `json:"datapoints"`
@@ -32,6 +34,8 @@ func (d *QueryResponseDataPoint) UnmarshalJSON(input []byte) (err error) {
 	}
 	return
 }
+
+// Table Query
 
 type TableQueryResponse struct {
 	Columns []TableQueryResponseColumn
@@ -139,4 +143,33 @@ func (table *TableQueryResponse) buildRows(rowCount int) (rows []tableResponseRo
 
 	}
 	return
+}
+
+// Annotations
+
+type Annotation struct {
+	request AnnotationRequestDetails
+	Time    time.Time
+	Title   string
+	Text    string
+	Tags    []string
+}
+
+// must be an easier way than this?
+func (annotation *Annotation) MarshalJSON() (output []byte, err error) {
+	jsonResponse := struct {
+		Request AnnotationRequestDetails `json:"annotation"`
+		Time    int64                    `json:"time"`
+		Title   string                   `json:"title"`
+		Text    string                   `json:"text"`
+		Tags    []string                 `json:"tags"`
+	}{
+		Request: annotation.request,
+		Time:    annotation.Time.UnixNano() / 1000000,
+		Title:   annotation.Title,
+		Text:    annotation.Text,
+		Tags:    annotation.Tags,
+	}
+
+	return json.Marshal(jsonResponse)
 }
