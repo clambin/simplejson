@@ -3,6 +3,7 @@ package grafana_json
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
@@ -10,14 +11,23 @@ import (
 
 // endpoints
 
-func (apiServer *APIServer) hello(w http.ResponseWriter, _ *http.Request) {
+func (server *Server) hello(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_, _ = fmt.Fprintf(w, "Hello")
 }
 
-func (apiServer *APIServer) search(w http.ResponseWriter, _ *http.Request) {
-	targets := apiServer.apiHandler.Search()
-	if output, err := json.Marshal(targets); err == nil {
+func (server *Server) search(w http.ResponseWriter, _ *http.Request) {
+	var err error
+	var output []byte
+
+	if server.handler.Search != nil {
+		targets := server.handler.Search()
+		output, err = json.Marshal(targets)
+	} else {
+		err = errors.New("search endpoint not implemented")
+	}
+
+	if err == nil {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write(output)
 	} else {
@@ -26,14 +36,12 @@ func (apiServer *APIServer) search(w http.ResponseWriter, _ *http.Request) {
 	}
 }
 
-func (apiServer *APIServer) query(w http.ResponseWriter, req *http.Request) {
+func (server *Server) query(w http.ResponseWriter, req *http.Request) {
 	var (
-		err            error
-		bytes          []byte
-		request        QueryRequest
-		responses      []*QueryResponse
-		tableResponses []*QueryTableResponse
-		output         []byte
+		err     error
+		bytes   []byte
+		request QueryRequest
+		output  []byte
 	)
 	defer req.Body.Close()
 
@@ -47,48 +55,68 @@ func (apiServer *APIServer) query(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	responses, tableResponses, err = apiServer.handleQueryRequest(&request)
+	responses := make([]interface{}, 0, len(request.Targets))
 
-	if err == nil {
-		packed := make([]interface{}, 0)
-		for _, response := range responses {
-			packed = append(packed, response)
-		}
-		for _, response := range tableResponses {
-			packed = append(packed, response)
-		}
-
-		output, err = json.Marshal(packed)
-	}
-
-	if err == nil {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write(output)
-	} else {
-		log.WithField("err", err).Warning("unable to create response")
-		http.Error(w, "unable to create response", http.StatusInternalServerError)
-	}
-}
-
-func (apiServer *APIServer) handleQueryRequest(request *QueryRequest) (responses []*QueryResponse, tableResponses []*QueryTableResponse, err error) {
 	for _, target := range request.Targets {
 		switch target.Type {
 		case "timeserie", "":
 			var response *QueryResponse
-			if response, err = apiServer.apiHandler.Query(target.Target, request); err == nil {
-				response.Target = target.Target
+			if response, err = server.handleQueryRequest(target.Target, &request); err == nil {
 				responses = append(responses, response)
+			} else {
+				break
 			}
 		case "table":
-			var response *QueryTableResponse
-			if response, err = apiServer.apiHandler.QueryTable(target.Target, request); err == nil {
-				tableResponses = append(tableResponses, response)
+			var response *TableQueryResponse
+			if response, err = server.handleTableQueryRequest(target.Target, &request); err == nil {
+				responses = append(responses, response)
+			} else {
+				break
 			}
-		default:
-			log.WithFields(log.Fields{"target": target.Target, "type": target.Type}).Warning("invalid target type")
-			err = fmt.Errorf("unsupport target type: %s", target.Type)
-			break
 		}
 	}
-	return
+
+	if err == nil {
+		if output, err = json.Marshal(responses); err == nil {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(output)
+		} else {
+			log.WithField("err", err).Warning("unable to create response")
+			http.Error(w, "unable to create response", http.StatusInternalServerError)
+		}
+	} else {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+}
+
+func (server *Server) handleQueryRequest(target string, request *QueryRequest) (*QueryResponse, error) {
+	if server.handler.Query == nil {
+		return nil, errors.New("search endpoint not implemented")
+	}
+	args := TimeSeriesQueryArgs{
+		CommonQueryArgs: CommonQueryArgs{
+			Range: QueryRequestRange{
+				From: request.Range.From,
+				To:   request.Range.To,
+			},
+		},
+		MaxDataPoints: request.MaxDataPoints,
+	}
+	return server.handler.Query(target, &args)
+
+}
+
+func (server *Server) handleTableQueryRequest(target string, request *QueryRequest) (*TableQueryResponse, error) {
+	if server.handler.TableQuery == nil {
+		return nil, errors.New("table query endpoint not implemented")
+	}
+	args := TableQueryArgs{
+		CommonQueryArgs: CommonQueryArgs{
+			Range: QueryRequestRange{
+				From: request.Range.From,
+				To:   request.Range.To,
+			},
+		},
+	}
+	return server.handler.TableQuery(target, &args)
 }

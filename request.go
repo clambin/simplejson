@@ -5,10 +5,23 @@ import (
 )
 
 type QueryRequest struct {
+	Targets []QueryRequestTarget `json:"targets"`
+	CommonQueryArgs
+	TimeSeriesQueryArgs
+}
+
+type CommonQueryArgs struct {
 	Range QueryRequestRange `json:"range"`
+}
+
+type TimeSeriesQueryArgs struct {
+	CommonQueryArgs
 	// Interval      QueryRequestDuration `json:"interval"`
-	MaxDataPoints uint64               `json:"maxDataPoints"`
-	Targets       []QueryRequestTarget `json:"targets"`
+	MaxDataPoints uint64 `json:"maxDataPoints"`
+}
+
+type TableQueryArgs struct {
+	CommonQueryArgs
 }
 
 type QueryRequestRange struct {

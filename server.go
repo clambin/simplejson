@@ -10,35 +10,35 @@ import (
 	"net/http"
 )
 
-// APIServer implements a generic frameworks for the Grafana simpleJson API datasource
-type APIServer struct {
-	apiHandler APIHandler
-	port       int
+// Server implements a generic frameworks for the Grafana simpleJson API datasource
+type Server struct {
+	handler Handler
+	port    int
 }
 
-// APIHandler implements the business logic of the Grafana API datasource so that
-// APIServer can be limited to providing the generic search/query framework
-type APIHandler interface {
-	Search() []string
-	Query(target string, request *QueryRequest) (*QueryResponse, error)
-	QueryTable(target string, request *QueryRequest) (*QueryTableResponse, error)
+// Handler implement the business logic of the Grafana API datasource so that
+// Server can be limited to providing the generic search/query framework
+type Handler struct {
+	Search     func() []string
+	Query      func(target string, args *TimeSeriesQueryArgs) (*QueryResponse, error)
+	TableQuery func(target string, args *TableQueryArgs) (*TableQueryResponse, error)
 }
 
-// Create creates a APIServer object
-func Create(apiHandler APIHandler, port int) *APIServer {
-	return &APIServer{apiHandler: apiHandler, port: port}
+// Create creates a Server object
+func Create(handler Handler, port int) *Server {
+	return &Server{handler: handler, port: port}
 }
 
 // Run the API Server
-func (apiServer *APIServer) Run() error {
+func (server *Server) Run() error {
 	r := mux.NewRouter()
 	r.Use(prometheusMiddleware)
 	r.Path("/metrics").Handler(promhttp.Handler())
-	r.HandleFunc("/", apiServer.hello)
-	r.HandleFunc("/search", apiServer.search).Methods("POST")
-	r.HandleFunc("/query", apiServer.query).Methods("POST")
+	r.HandleFunc("/", server.hello)
+	r.HandleFunc("/search", server.search).Methods("POST")
+	r.HandleFunc("/query", server.query).Methods("POST")
 
-	return http.ListenAndServe(fmt.Sprintf(":%d", apiServer.port), r)
+	return http.ListenAndServe(fmt.Sprintf(":%d", server.port), r)
 }
 
 // Prometheus metrics

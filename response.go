@@ -33,18 +33,18 @@ func (d *QueryResponseDataPoint) UnmarshalJSON(input []byte) (err error) {
 	return
 }
 
-type QueryTableResponse struct {
-	Columns []QueryTableResponseColumn
+type TableQueryResponse struct {
+	Columns []TableQueryResponseColumn
 }
 
-type QueryTableResponseColumn struct {
+type TableQueryResponseColumn struct {
 	Text string
 	Data interface{}
 }
 
-type QueryTableResponseTimeColumn []time.Time
-type QueryTableResponseStringColumn []string
-type QueryTableResponseNumberColumn []float64
+type TableQueryResponseTimeColumn []time.Time
+type TableQueryResponseStringColumn []string
+type TableQueryResponseNumberColumn []float64
 
 type tableResponse struct {
 	Type    string                `json:"type"`
@@ -59,7 +59,7 @@ type tableResponseColumn struct {
 
 type tableResponseRow []interface{}
 
-func (table *QueryTableResponse) MarshalJSON() (output []byte, err error) {
+func (table *TableQueryResponse) MarshalJSON() (output []byte, err error) {
 	var columns []tableResponseColumn
 	var rows []tableResponseRow
 	var colTypes []string
@@ -83,17 +83,17 @@ func (table *QueryTableResponse) MarshalJSON() (output []byte, err error) {
 	return
 }
 
-func (table *QueryTableResponse) getColumnDetails() (colTypes []string, rowCount int, err error) {
+func (table *TableQueryResponse) getColumnDetails() (colTypes []string, rowCount int, err error) {
 	for _, entry := range table.Columns {
 		var dataCount int
 		switch data := entry.Data.(type) {
-		case QueryTableResponseTimeColumn:
+		case TableQueryResponseTimeColumn:
 			colTypes = append(colTypes, "time")
 			dataCount = len(data)
-		case QueryTableResponseStringColumn:
+		case TableQueryResponseStringColumn:
 			colTypes = append(colTypes, "string")
 			dataCount = len(data)
-		case QueryTableResponseNumberColumn:
+		case TableQueryResponseNumberColumn:
 			colTypes = append(colTypes, "number")
 			dataCount = len(data)
 		}
@@ -110,7 +110,7 @@ func (table *QueryTableResponse) getColumnDetails() (colTypes []string, rowCount
 	return
 }
 
-func (table *QueryTableResponse) buildColumns(colTypes []string) (columns []tableResponseColumn, err error) {
+func (table *TableQueryResponse) buildColumns(colTypes []string) (columns []tableResponseColumn, err error) {
 	for index, entry := range colTypes {
 		columns = append(columns, tableResponseColumn{
 			Text: table.Columns[index].Text,
@@ -120,17 +120,17 @@ func (table *QueryTableResponse) buildColumns(colTypes []string) (columns []tabl
 	return
 }
 
-func (table *QueryTableResponse) buildRows(rowCount int) (rows []tableResponseRow, err error) {
+func (table *TableQueryResponse) buildRows(rowCount int) (rows []tableResponseRow, err error) {
 	for row := 0; row < rowCount; row++ {
 		newRow := make(tableResponseRow, len(table.Columns))
 
 		for column, entry := range table.Columns {
 			switch data := entry.Data.(type) {
-			case QueryTableResponseTimeColumn:
+			case TableQueryResponseTimeColumn:
 				newRow[column] = data[row]
-			case QueryTableResponseStringColumn:
+			case TableQueryResponseStringColumn:
 				newRow[column] = data[row]
-			case QueryTableResponseNumberColumn:
+			case TableQueryResponseNumberColumn:
 				newRow[column] = data[row]
 			}
 		}

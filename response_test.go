@@ -58,12 +58,12 @@ func TestWriteResponseDataSeries(t *testing.T) {
 func TestWriteResponseTable(t *testing.T) {
 	testDate := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
 
-	in := []grafana_json.QueryTableResponse{{
-		Columns: []grafana_json.QueryTableResponseColumn{
-			{Text: "Time", Data: grafana_json.QueryTableResponseTimeColumn{testDate, testDate}},
-			{Text: "Label", Data: grafana_json.QueryTableResponseStringColumn{"foo", "bar"}},
-			{Text: "Series A", Data: grafana_json.QueryTableResponseNumberColumn{42, 43}},
-			{Text: "Series B", Data: grafana_json.QueryTableResponseNumberColumn{64.5, 100.0}},
+	in := []grafana_json.TableQueryResponse{{
+		Columns: []grafana_json.TableQueryResponseColumn{
+			{Text: "Time", Data: grafana_json.TableQueryResponseTimeColumn{testDate, testDate}},
+			{Text: "Label", Data: grafana_json.TableQueryResponseStringColumn{"foo", "bar"}},
+			{Text: "Series A", Data: grafana_json.TableQueryResponseNumberColumn{42, 43}},
+			{Text: "Series B", Data: grafana_json.TableQueryResponseNumberColumn{64.5, 100.0}},
 		},
 	}}
 
@@ -79,12 +79,12 @@ func TestWriteResponseTable(t *testing.T) {
 func TestWriteBadResponseTable(t *testing.T) {
 	testDate := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
 
-	in := []grafana_json.QueryTableResponse{{
-		Columns: []grafana_json.QueryTableResponseColumn{
-			{Text: "Time", Data: grafana_json.QueryTableResponseTimeColumn{testDate, testDate}},
-			{Text: "Label", Data: grafana_json.QueryTableResponseStringColumn{"foo"}},
-			{Text: "Series A", Data: grafana_json.QueryTableResponseNumberColumn{42, 43}},
-			{Text: "Series B", Data: grafana_json.QueryTableResponseNumberColumn{64.5, 100.0, 105.0}},
+	in := []grafana_json.TableQueryResponse{{
+		Columns: []grafana_json.TableQueryResponseColumn{
+			{Text: "Time", Data: grafana_json.TableQueryResponseTimeColumn{testDate, testDate}},
+			{Text: "Label", Data: grafana_json.TableQueryResponseStringColumn{"foo"}},
+			{Text: "Series A", Data: grafana_json.TableQueryResponseNumberColumn{42, 43}},
+			{Text: "Series B", Data: grafana_json.TableQueryResponseNumberColumn{64.5, 100.0, 105.0}},
 		},
 	}}
 
@@ -105,12 +105,12 @@ func TestWriteCombinedResponse(t *testing.T) {
 		},
 	}}
 
-	tables := []grafana_json.QueryTableResponse{{
-		Columns: []grafana_json.QueryTableResponseColumn{
-			{Text: "Time", Data: grafana_json.QueryTableResponseTimeColumn{testDate, testDate}},
-			{Text: "Label", Data: grafana_json.QueryTableResponseStringColumn{"foo", "bar"}},
-			{Text: "Series A", Data: grafana_json.QueryTableResponseNumberColumn{42, 43}},
-			{Text: "Series B", Data: grafana_json.QueryTableResponseNumberColumn{64.5, 100.0}},
+	tables := []grafana_json.TableQueryResponse{{
+		Columns: []grafana_json.TableQueryResponseColumn{
+			{Text: "Time", Data: grafana_json.TableQueryResponseTimeColumn{testDate, testDate}},
+			{Text: "Label", Data: grafana_json.TableQueryResponseStringColumn{"foo", "bar"}},
+			{Text: "Series A", Data: grafana_json.TableQueryResponseNumberColumn{42, 43}},
+			{Text: "Series B", Data: grafana_json.TableQueryResponseNumberColumn{64.5, 100.0}},
 		},
 	}}
 

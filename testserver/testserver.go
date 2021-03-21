@@ -7,20 +7,21 @@ import (
 )
 
 func main() {
-	h := &Handler{}
-	s := grafana_json.Create(h, 8081)
+	handler := grafana_json.Handler{
+		Search:     Search,
+		Query:      Query,
+		TableQuery: TableQuery,
+	}
+	s := grafana_json.Create(handler, 8081)
 
 	_ = s.Run()
 }
 
-type Handler struct {
-}
-
-func (handler *Handler) Search() []string {
+func Search() []string {
 	return []string{"series", "table"}
 }
 
-func (handler *Handler) Query(target string, _ *grafana_json.QueryRequest) (response *grafana_json.QueryResponse, err error) {
+func Query(target string, _ *grafana_json.TimeSeriesQueryArgs) (response *grafana_json.QueryResponse, err error) {
 	if target != "series" {
 		err = errors.New("unsupported series")
 		return
@@ -41,14 +42,14 @@ func (handler *Handler) Query(target string, _ *grafana_json.QueryRequest) (resp
 	return
 }
 
-func (handler *Handler) QueryTable(target string, _ *grafana_json.QueryRequest) (response *grafana_json.QueryTableResponse, err error) {
+func TableQuery(target string, _ *grafana_json.TableQueryArgs) (response *grafana_json.TableQueryResponse, err error) {
 	if target != "table" {
 		err = errors.New("unsupported series")
 	}
 
-	timestamps := make(grafana_json.QueryTableResponseTimeColumn, 100)
-	seriesA := make(grafana_json.QueryTableResponseNumberColumn, 100)
-	seriesB := make(grafana_json.QueryTableResponseNumberColumn, 100)
+	timestamps := make(grafana_json.TableQueryResponseTimeColumn, 100)
+	seriesA := make(grafana_json.TableQueryResponseNumberColumn, 100)
+	seriesB := make(grafana_json.TableQueryResponseNumberColumn, 100)
 
 	timestamp := time.Now().Add(-1 * time.Hour)
 	for i := 0; i < 100; i++ {
@@ -58,8 +59,8 @@ func (handler *Handler) QueryTable(target string, _ *grafana_json.QueryRequest) 
 		timestamp = timestamp.Add(1 * time.Second)
 	}
 
-	response = new(grafana_json.QueryTableResponse)
-	response.Columns = []grafana_json.QueryTableResponseColumn{
+	response = new(grafana_json.TableQueryResponse)
+	response.Columns = []grafana_json.TableQueryResponseColumn{
 		{
 			Text: "timestamp",
 			Data: timestamps,
