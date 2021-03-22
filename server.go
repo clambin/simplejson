@@ -37,13 +37,13 @@ func (server *Server) Run() error {
 	r.Path("/metrics").Handler(promhttp.Handler())
 	r.HandleFunc("/", server.hello)
 	if server.handler.Search != nil {
-		r.HandleFunc("/search", server.search).Methods("POST")
+		r.HandleFunc("/search", server.search).Methods(http.MethodPost)
 	}
 	if server.handler.Query != nil || server.handler.TableQuery != nil {
-		r.HandleFunc("/query", server.query).Methods("POST")
+		r.HandleFunc("/query", server.query).Methods(http.MethodPost)
 	}
 	if server.handler.Annotations != nil {
-		r.HandleFunc("/annotations", server.annotations).Methods("POST", "OPTIONS")
+		r.HandleFunc("/annotations", server.annotations).Methods(http.MethodPost, http.MethodOptions)
 	}
 	return http.ListenAndServe(fmt.Sprintf(":%d", server.port), r)
 }
