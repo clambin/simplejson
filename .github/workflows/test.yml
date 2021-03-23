@@ -7,7 +7,19 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    container: golang:1.15
+    strategy:
+      matrix:
+        go: [ '1.15', '1.16' ]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+      - name: test
+        run: |
+          go test ./... -race -coverprofile=coverage.txt -covermode=atomic
+  codecov:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
