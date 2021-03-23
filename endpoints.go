@@ -17,7 +17,7 @@ func (server *Server) hello(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (server *Server) search(w http.ResponseWriter, _ *http.Request) {
-	targets := server.handler.Search()
+	targets := server.handler.Endpoints().Search()
 	output, err := json.Marshal(targets)
 
 	if err == nil {
@@ -83,7 +83,7 @@ func (server *Server) query(w http.ResponseWriter, req *http.Request) {
 }
 
 func (server *Server) handleQueryRequest(target string, request *QueryRequest) (*QueryResponse, error) {
-	if server.handler.Query == nil {
+	if server.handler.Endpoints().Query == nil {
 		return nil, errors.New("query endpoint not implemented")
 	}
 	args := TimeSeriesQueryArgs{
@@ -95,12 +95,12 @@ func (server *Server) handleQueryRequest(target string, request *QueryRequest) (
 		},
 		MaxDataPoints: request.MaxDataPoints,
 	}
-	return server.handler.Query(target, &args)
+	return server.handler.Endpoints().Query(target, &args)
 
 }
 
 func (server *Server) handleTableQueryRequest(target string, request *QueryRequest) (*TableQueryResponse, error) {
-	if server.handler.TableQuery == nil {
+	if server.handler.Endpoints().TableQuery == nil {
 		return nil, errors.New("table query endpoint not implemented")
 	}
 	args := TableQueryArgs{
@@ -111,7 +111,7 @@ func (server *Server) handleTableQueryRequest(target string, request *QueryReque
 			},
 		},
 	}
-	return server.handler.TableQuery(target, &args)
+	return server.handler.Endpoints().TableQuery(target, &args)
 }
 
 func (server *Server) annotations(w http.ResponseWriter, req *http.Request) {
@@ -153,7 +153,7 @@ func (server *Server) annotations(w http.ResponseWriter, req *http.Request) {
 		},
 	}
 
-	if annotations, err = server.handler.Annotations(request.Annotation.Name, &args); err == nil {
+	if annotations, err = server.handler.Endpoints().Annotations(request.Annotation.Name, request.Annotation.Query, &args); err == nil {
 		for index, annotation := range annotations {
 			annotation.request = request.Annotation
 			annotations[index] = annotation
@@ -166,7 +166,7 @@ func (server *Server) annotations(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if err != nil {
-		http.Error(w, "failed to process annotation request", http.StatusInternalServerError)
+		http.Error(w, "failed to process annotations request", http.StatusInternalServerError)
 	}
 
 }

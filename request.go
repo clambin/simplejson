@@ -4,36 +4,44 @@ import (
 	"time"
 )
 
+// QueryRequest is a Query request. For each specified QueryRequestTarget, the server will call the Query endpoint
+// with the provided TimeSeriesQueryArgs
 type QueryRequest struct {
 	Targets []QueryRequestTarget `json:"targets"`
 	TimeSeriesQueryArgs
 }
 
+// CommonQueryArgs contains common arguments used by endpoints
 type CommonQueryArgs struct {
 	Range QueryRequestRange `json:"range"`
 }
 
+// TimeSeriesQueryArgs contains the arguments for a Query
 type TimeSeriesQueryArgs struct {
 	CommonQueryArgs
 	// Interval      QueryRequestDuration `json:"interval"`
 	MaxDataPoints uint64 `json:"maxDataPoints"`
 }
 
+// TableQueryArgs contains the arguments for a TableQuery
 type TableQueryArgs struct {
 	CommonQueryArgs
 }
 
+// QueryRequestRange is part of the common arguments
 type QueryRequestRange struct {
 	From time.Time `json:"from"`
 	To   time.Time `json:"to"`
 }
 
+// QueryRequestTarget specifies the requested target. Target contains the target's name. Type specifies
+// the target's type ("dataserie" or "" for Queries, "table" for TableQueries).
 type QueryRequestTarget struct {
 	Target string `json:"target"`
 	Type   string `json:"type"`
 }
 
-type QueryRequestDuration time.Duration
+// type QueryRequestDuration time.Duration
 
 /* TODO: intervals can go to "1y", which time.ParseDuration doesn't handle
 func (d *QueryRequestDuration) MarshalJSON() ([]byte, error) {
@@ -53,15 +61,18 @@ func (d *QueryRequestDuration) UnmarshalJSON(input []byte) (err error) {
 }
 */
 
+// AnnotationRequest is a request for annotations
 type AnnotationRequest struct {
 	AnnotationRequestArgs
 	Annotation AnnotationRequestDetails `json:"annotation"`
 }
 
+// AnnotationRequestArgs contains arguments for the Annotations endpoint
 type AnnotationRequestArgs struct {
 	CommonQueryArgs
 }
 
+// AnnotationRequestDetails specifies which annotations should be returned
 type AnnotationRequestDetails struct {
 	Name       string `json:"name"`
 	Datasource string `json:"datasource"`

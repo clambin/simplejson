@@ -6,7 +6,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	// log "github.com/sirupsen/logrus"
 	"net/http"
 )
 
@@ -18,15 +17,24 @@ type Server struct {
 
 // Handler implement the business logic of the Grafana API datasource so that
 // Server can be limited to providing the generic search/query framework
-type Handler struct {
+type Handler interface {
+	Endpoints() Endpoints
+}
+
+// Endpoints contains the functions that implements each of the SimpleJson endpoints
+type Endpoints struct {
 	Search      func() []string
 	Query       func(target string, args *TimeSeriesQueryArgs) (*QueryResponse, error)
 	TableQuery  func(target string, args *TableQueryArgs) (*TableQueryResponse, error)
-	Annotations func(annotation string, args *AnnotationRequestArgs) ([]Annotation, error)
+	Annotations func(name, query string, args *AnnotationRequestArgs) ([]Annotation, error)
 }
 
-// Create creates a Server object
+// Create creates a Server object for the specified Handler.
+// Panics if handler is nil
 func Create(handler Handler, port int) *Server {
+	if handler == nil {
+		panic("nil handler specified")
+	}
 	return &Server{handler: handler, port: port}
 }
 
@@ -36,13 +44,13 @@ func (server *Server) Run() error {
 	r.Use(prometheusMiddleware)
 	r.Path("/metrics").Handler(promhttp.Handler())
 	r.HandleFunc("/", server.hello)
-	if server.handler.Search != nil {
+	if server.handler.Endpoints().Search != nil {
 		r.HandleFunc("/search", server.search).Methods(http.MethodPost)
 	}
-	if server.handler.Query != nil || server.handler.TableQuery != nil {
+	if server.handler.Endpoints().Query != nil || server.handler.Endpoints().TableQuery != nil {
 		r.HandleFunc("/query", server.query).Methods(http.MethodPost)
 	}
-	if server.handler.Annotations != nil {
+	if server.handler.Endpoints().Annotations != nil {
 		r.HandleFunc("/annotations", server.annotations).Methods(http.MethodPost, http.MethodOptions)
 	}
 	return http.ListenAndServe(fmt.Sprintf(":%d", server.port), r)

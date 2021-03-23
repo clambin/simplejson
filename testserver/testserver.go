@@ -8,23 +8,29 @@ import (
 )
 
 func main() {
-	handler := grafana_json.Handler{
-		Search:      Search,
-		Query:       Query,
-		TableQuery:  TableQuery,
-		Annotations: Annotations,
-	}
-	s := grafana_json.Create(handler, 8088)
+	h := &handler{}
+	s := grafana_json.Create(h, 8088)
 
 	log.SetLevel(log.DebugLevel)
 	_ = s.Run()
 }
 
-func Search() []string {
+type handler struct{}
+
+func (h *handler) Endpoints() grafana_json.Endpoints {
+	return grafana_json.Endpoints{
+		Search:      h.Search,
+		Query:       h.Query,
+		TableQuery:  h.TableQuery,
+		Annotations: h.Annotations,
+	}
+}
+
+func (h *handler) Search() []string {
 	return []string{"series", "table"}
 }
 
-func Query(target string, _ *grafana_json.TimeSeriesQueryArgs) (response *grafana_json.QueryResponse, err error) {
+func (h *handler) Query(target string, _ *grafana_json.TimeSeriesQueryArgs) (response *grafana_json.QueryResponse, err error) {
 	if target != "series" {
 		err = errors.New("unsupported series")
 		return
@@ -44,7 +50,7 @@ func Query(target string, _ *grafana_json.TimeSeriesQueryArgs) (response *grafan
 	return
 }
 
-func TableQuery(target string, _ *grafana_json.TableQueryArgs) (response *grafana_json.TableQueryResponse, err error) {
+func (h *handler) TableQuery(target string, _ *grafana_json.TableQueryArgs) (response *grafana_json.TableQueryResponse, err error) {
 	if target != "table" {
 		err = errors.New("unsupported series")
 		return
@@ -80,7 +86,7 @@ func TableQuery(target string, _ *grafana_json.TableQueryArgs) (response *grafan
 	return
 }
 
-func Annotations(_ string, _ *grafana_json.AnnotationRequestArgs) (annotations []grafana_json.Annotation, err error) {
+func (h *handler) Annotations(_, _ string, _ *grafana_json.AnnotationRequestArgs) (annotations []grafana_json.Annotation, err error) {
 	annotations = append(annotations, grafana_json.Annotation{
 		Time:  time.Now().Add(-5 * time.Minute),
 		Title: "foo",
