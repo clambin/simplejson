@@ -62,6 +62,10 @@ var (
 		Name: "grafana_api_duration_seconds",
 		Help: "Grafana API duration of HTTP requests.",
 	}, []string{"path"})
+	queryDuration = promauto.NewSummaryVec(prometheus.SummaryOpts{
+		Name: "grafana_api_query_duration_seconds",
+		Help: "Grafana API duration of query requests by target",
+	}, []string{"type", "target"})
 )
 
 func prometheusMiddleware(next http.Handler) http.Handler {

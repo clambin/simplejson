@@ -7,6 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
+	"time"
 )
 
 // endpoints
@@ -51,6 +52,7 @@ func (server *Server) query(w http.ResponseWriter, req *http.Request) {
 	responses := make([]interface{}, 0, len(request.Targets))
 
 	for _, target := range request.Targets {
+		start := time.Now()
 		switch target.Type {
 		case "timeserie", "":
 			var response *QueryResponse
@@ -67,6 +69,7 @@ func (server *Server) query(w http.ResponseWriter, req *http.Request) {
 				break
 			}
 		}
+		queryDuration.WithLabelValues(target.Type, target.Target).Observe(time.Now().Sub(start).Seconds())
 	}
 
 	if err == nil {
