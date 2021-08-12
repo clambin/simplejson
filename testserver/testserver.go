@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"github.com/clambin/grafana-json"
 	log "github.com/sirupsen/logrus"
@@ -30,7 +31,7 @@ func (h *handler) Search() []string {
 	return []string{"series", "table"}
 }
 
-func (h *handler) Query(target string, _ *grafana_json.TimeSeriesQueryArgs) (response *grafana_json.QueryResponse, err error) {
+func (h *handler) Query(_ context.Context, target string, _ *grafana_json.TimeSeriesQueryArgs) (response *grafana_json.QueryResponse, err error) {
 	if target != "series" {
 		err = errors.New("unsupported series")
 		return
@@ -50,7 +51,7 @@ func (h *handler) Query(target string, _ *grafana_json.TimeSeriesQueryArgs) (res
 	return
 }
 
-func (h *handler) TableQuery(target string, _ *grafana_json.TableQueryArgs) (response *grafana_json.TableQueryResponse, err error) {
+func (h *handler) TableQuery(_ context.Context, target string, _ *grafana_json.TableQueryArgs) (response *grafana_json.TableQueryResponse, err error) {
 	if target != "table" {
 		err = errors.New("unsupported series")
 		return

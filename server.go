@@ -1,6 +1,7 @@
 package grafana_json
 
 import (
+	"context"
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus"
@@ -15,7 +16,7 @@ type Server struct {
 	port    int
 }
 
-// Handler implement the business logic of the Grafana API datasource so that
+// Handler implements the business logic of the Grafana API datasource so that
 // Server can be limited to providing the generic search/query framework
 type Handler interface {
 	Endpoints() Endpoints
@@ -23,9 +24,13 @@ type Handler interface {
 
 // Endpoints contains the functions that implements each of the SimpleJson endpoints
 type Endpoints struct {
-	Search      func() []string
-	Query       func(target string, args *TimeSeriesQueryArgs) (*QueryResponse, error)
-	TableQuery  func(target string, args *TableQueryArgs) (*TableQueryResponse, error)
+	// Search implements the /search endpoint: it returns the list of supported targets
+	Search func() []string
+	// Query implements the /query endpoint for dataSeries targets
+	Query func(ctx context.Context, target string, args *TimeSeriesQueryArgs) (*QueryResponse, error)
+	// TableQuery implements the /query endpoint for table targets
+	TableQuery func(ctx context.Context, target string, args *TableQueryArgs) (*TableQueryResponse, error)
+	// Annotations implements the /annotations endpoint
 	Annotations func(name, query string, args *AnnotationRequestArgs) ([]Annotation, error)
 }
 

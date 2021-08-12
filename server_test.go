@@ -2,6 +2,7 @@ package grafana_json_test
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"github.com/clambin/grafana-json"
@@ -13,7 +14,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	handler := Create()
+	handler := createHandler()
 	s := grafana_json.Create(handler, 8080)
 	go func() {
 		if err := s.Run(); err != nil {
@@ -203,7 +204,9 @@ func call(url, method, body string) (response string, err error) {
 
 	var resp *http.Response
 	if resp, err = client.Do(req); err == nil {
-		defer resp.Body.Close()
+		defer func() {
+			_ = resp.Body.Close()
+		}()
 		var buff []byte
 		if resp.StatusCode == 200 {
 			if buff, err = ioutil.ReadAll(resp.Body); err == nil {
@@ -229,7 +232,7 @@ type testAPIHandler struct {
 	annotations         []grafana_json.Annotation
 }
 
-func Create() (handler *testAPIHandler) {
+func createHandler() (handler *testAPIHandler) {
 	handler = &testAPIHandler{}
 
 	handler.queryResponses = map[string]*grafana_json.QueryResponse{
@@ -291,7 +294,7 @@ func (handler *testAPIHandler) Search() []string {
 	return []string{"A", "B", "C", "Crash"}
 }
 
-func (handler *testAPIHandler) Query(target string, _ *grafana_json.TimeSeriesQueryArgs) (response *grafana_json.QueryResponse, err error) {
+func (handler *testAPIHandler) Query(_ context.Context, target string, _ *grafana_json.TimeSeriesQueryArgs) (response *grafana_json.QueryResponse, err error) {
 	if target == "Crash" {
 		err = fmt.Errorf("server crash")
 	} else {
@@ -303,7 +306,7 @@ func (handler *testAPIHandler) Query(target string, _ *grafana_json.TimeSeriesQu
 	return
 }
 
-func (handler *testAPIHandler) TableQuery(target string, _ *grafana_json.TableQueryArgs) (response *grafana_json.TableQueryResponse, err error) {
+func (handler *testAPIHandler) TableQuery(_ context.Context, target string, _ *grafana_json.TableQueryArgs) (response *grafana_json.TableQueryResponse, err error) {
 	if target == "Crash" {
 		err = fmt.Errorf("server crash")
 	} else {

@@ -1,6 +1,7 @@
 package grafana_json
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
@@ -31,15 +32,14 @@ func (server *Server) search(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (server *Server) query(w http.ResponseWriter, req *http.Request) {
-	var (
-		err     error
-		bytes   []byte
-		request QueryRequest
-		output  []byte
-	)
-	defer req.Body.Close()
+	defer func() {
+		_ = req.Body.Close()
+	}()
 
-	if bytes, err = ioutil.ReadAll(req.Body); err == nil {
+	bytes, err := ioutil.ReadAll(req.Body)
+
+	var request QueryRequest
+	if err == nil {
 		err = json.Unmarshal(bytes, &request)
 	}
 
@@ -56,14 +56,14 @@ func (server *Server) query(w http.ResponseWriter, req *http.Request) {
 		switch target.Type {
 		case "timeserie", "":
 			var response *QueryResponse
-			if response, err = server.handleQueryRequest(target.Target, &request); err == nil {
+			if response, err = server.handleQueryRequest(req.Context(), target.Target, &request); err == nil {
 				responses = append(responses, response)
 			} else {
 				break
 			}
 		case "table":
 			var response *TableQueryResponse
-			if response, err = server.handleTableQueryRequest(target.Target, &request); err == nil {
+			if response, err = server.handleTableQueryRequest(req.Context(), target.Target, &request); err == nil {
 				responses = append(responses, response)
 			} else {
 				break
@@ -72,20 +72,25 @@ func (server *Server) query(w http.ResponseWriter, req *http.Request) {
 		queryDuration.WithLabelValues(target.Type, target.Target).Observe(time.Now().Sub(start).Seconds())
 	}
 
-	if err == nil {
-		if output, err = json.Marshal(responses); err == nil {
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write(output)
-		} else {
-			log.WithField("err", err).Warning("unable to create response")
-			http.Error(w, "unable to create response", http.StatusInternalServerError)
-		}
-	} else {
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
+
+	var output []byte
+	output, err = json.Marshal(responses)
+
+	if err != nil {
+		log.WithField("err", err).Warning("unable to create response")
+		http.Error(w, "unable to create response", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(output)
 }
 
-func (server *Server) handleQueryRequest(target string, request *QueryRequest) (*QueryResponse, error) {
+func (server *Server) handleQueryRequest(ctx context.Context, target string, request *QueryRequest) (*QueryResponse, error) {
 	if server.handler.Endpoints().Query == nil {
 		return nil, errors.New("query endpoint not implemented")
 	}
@@ -98,11 +103,11 @@ func (server *Server) handleQueryRequest(target string, request *QueryRequest) (
 		},
 		MaxDataPoints: request.MaxDataPoints,
 	}
-	return server.handler.Endpoints().Query(target, &args)
+	return server.handler.Endpoints().Query(ctx, target, &args)
 
 }
 
-func (server *Server) handleTableQueryRequest(target string, request *QueryRequest) (*TableQueryResponse, error) {
+func (server *Server) handleTableQueryRequest(ctx context.Context, target string, request *QueryRequest) (*TableQueryResponse, error) {
 	if server.handler.Endpoints().TableQuery == nil {
 		return nil, errors.New("table query endpoint not implemented")
 	}
@@ -114,7 +119,7 @@ func (server *Server) handleTableQueryRequest(target string, request *QueryReque
 			},
 		},
 	}
-	return server.handler.Endpoints().TableQuery(target, &args)
+	return server.handler.Endpoints().TableQuery(ctx, target, &args)
 }
 
 func (server *Server) annotations(w http.ResponseWriter, req *http.Request) {
@@ -124,7 +129,9 @@ func (server *Server) annotations(w http.ResponseWriter, req *http.Request) {
 		request     AnnotationRequest
 		annotations []Annotation
 	)
-	defer req.Body.Close()
+	defer func() {
+		_ = req.Body.Close()
+	}()
 
 	if req.Method == http.MethodOptions {
 		w.Header().Set("Access-Control-Allow-Headers", "accept, content-type")
