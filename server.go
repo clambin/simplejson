@@ -45,7 +45,12 @@ func Create(handler Handler, port int) *Server {
 
 // Run the API Server
 func (server *Server) Run() error {
-	r := mux.NewRouter()
+	return http.ListenAndServe(fmt.Sprintf(":%d", server.port), server.GetRouter())
+}
+
+// GetRouter sets up an HTTP router.  Useful if you want to hook other handlers to the HTTP Server
+func (server *Server) GetRouter() (r *mux.Router) {
+	r = mux.NewRouter()
 	r.Use(prometheusMiddleware)
 	r.Path("/metrics").Handler(promhttp.Handler())
 	r.HandleFunc("/", server.hello)
@@ -58,7 +63,7 @@ func (server *Server) Run() error {
 	if server.handler.Endpoints().Annotations != nil {
 		r.HandleFunc("/annotations", server.annotations).Methods(http.MethodPost, http.MethodOptions)
 	}
-	return http.ListenAndServe(fmt.Sprintf(":%d", server.port), r)
+	return
 }
 
 // Prometheus metrics
