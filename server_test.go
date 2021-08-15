@@ -15,9 +15,9 @@ import (
 
 func TestMain(m *testing.M) {
 	handler := createHandler()
-	s := grafana_json.Create(handler, 8080)
+	s := grafana_json.Create(handler)
 	go func() {
-		if err := s.Run(); err != nil {
+		if err := s.Run(8080); err != nil {
 			panic(err)
 		}
 	}()
@@ -86,15 +86,15 @@ func TestAPIServer_TableQuery(t *testing.T) {
 }
 
 func TestAPIServer_NoHandler(t *testing.T) {
-	assert.Panics(t, func() { grafana_json.Create(nil, 8080) })
+	assert.Panics(t, func() { grafana_json.Create(nil) })
 }
 
 func TestAPIServer_MissingEndpoint(t *testing.T) {
 	handler := testAPIHandler{noEndpoints: true}
-	s := grafana_json.Create(&handler, 8082)
+	s := grafana_json.Create(&handler)
 
 	go func() {
-		err := s.Run()
+		err := s.Run(8082)
 
 		assert.Nil(t, err)
 	}()

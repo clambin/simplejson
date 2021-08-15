@@ -10,10 +10,10 @@ import (
 
 func main() {
 	h := &handler{}
-	s := grafana_json.Create(h, 8088)
+	s := grafana_json.Create(h)
 
 	log.SetLevel(log.DebugLevel)
-	_ = s.Run()
+	_ = s.Run(8088)
 }
 
 type handler struct{}

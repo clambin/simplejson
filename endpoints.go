@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -22,19 +23,18 @@ func (server *Server) search(w http.ResponseWriter, _ *http.Request) {
 	targets := server.handler.Endpoints().Search()
 	output, err := json.Marshal(targets)
 
-	if err == nil {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write(output)
-	} else {
-		log.WithField("err", err).Warning("failed to create search response")
-		http.Error(w, "failed to create search response", http.StatusInternalServerError)
+	if err != nil {
+		http.Error(w, "failed to create search response: "+err.Error(), http.StatusInternalServerError)
+		return
 	}
+
+	_, _ = w.Write(output)
 }
 
 func (server *Server) query(w http.ResponseWriter, req *http.Request) {
-	defer func() {
-		_ = req.Body.Close()
-	}()
+	defer func(body io.ReadCloser) {
+		_ = body.Close()
+	}(req.Body)
 
 	bytes, err := ioutil.ReadAll(req.Body)
 
@@ -44,8 +44,7 @@ func (server *Server) query(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if err != nil {
-		log.WithField("err", err).Warning("failed to parse request")
-		http.Error(w, "failed to parse request", http.StatusBadRequest)
+		http.Error(w, "failed to parse request: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -73,7 +72,7 @@ func (server *Server) query(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "failed to create response: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -81,8 +80,7 @@ func (server *Server) query(w http.ResponseWriter, req *http.Request) {
 	output, err = json.Marshal(responses)
 
 	if err != nil {
-		log.WithField("err", err).Warning("unable to create response")
-		http.Error(w, "unable to create response", http.StatusInternalServerError)
+		http.Error(w, "unable to create response: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -123,15 +121,9 @@ func (server *Server) handleTableQueryRequest(ctx context.Context, target string
 }
 
 func (server *Server) annotations(w http.ResponseWriter, req *http.Request) {
-	var (
-		err         error
-		bytes       []byte
-		request     AnnotationRequest
-		annotations []Annotation
-	)
-	defer func() {
-		_ = req.Body.Close()
-	}()
+	defer func(body io.ReadCloser) {
+		_ = body.Close()
+	}(req.Body)
 
 	if req.Method == http.MethodOptions {
 		w.Header().Set("Access-Control-Allow-Headers", "accept, content-type")
@@ -141,13 +133,14 @@ func (server *Server) annotations(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if bytes, err = ioutil.ReadAll(req.Body); err == nil {
+	var request AnnotationRequest
+	bytes, err := ioutil.ReadAll(req.Body)
+	if err == nil {
 		err = json.Unmarshal(bytes, &request)
 	}
 
 	if err != nil {
-		log.WithField("err", err).Warning("failed to parse request")
-		http.Error(w, "failed to parse request", http.StatusBadRequest)
+		http.Error(w, "failed to parse request: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -163,20 +156,19 @@ func (server *Server) annotations(w http.ResponseWriter, req *http.Request) {
 		},
 	}
 
+	var annotations []Annotation
 	if annotations, err = server.handler.Endpoints().Annotations(request.Annotation.Name, request.Annotation.Query, &args); err == nil {
 		for index, annotation := range annotations {
 			annotation.request = request.Annotation
 			annotations[index] = annotation
 		}
-
-		if bytes, err = json.Marshal(annotations); err == nil {
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write(bytes)
-		}
+		bytes, err = json.Marshal(annotations)
 	}
 
 	if err != nil {
-		http.Error(w, "failed to process annotations request", http.StatusInternalServerError)
+		http.Error(w, "failed to process annotations request: "+err.Error(), http.StatusInternalServerError)
+		return
 	}
 
+	_, _ = w.Write(bytes)
 }

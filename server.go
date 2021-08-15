@@ -36,16 +36,18 @@ type Endpoints struct {
 
 // Create creates a Server object for the specified Handler.
 // Panics if handler is nil
-func Create(handler Handler, port int) *Server {
+func Create(handler Handler) *Server {
 	if handler == nil {
-		panic("nil handler specified")
+		panic("no handler provided")
 	}
-	return &Server{handler: handler, port: port}
+	return &Server{handler: handler}
 }
 
-// Run the API Server
-func (server *Server) Run() error {
-	return http.ListenAndServe(fmt.Sprintf(":%d", server.port), server.GetRouter())
+// Run the API Server. Convenience function. This is the same as:
+//   s := Create(handler)
+//   http.ListenAndServe(":8080", s.GetRouter())
+func (server *Server) Run(port int) error {
+	return http.ListenAndServe(fmt.Sprintf(":%d", port), server.GetRouter())
 }
 
 // GetRouter sets up an HTTP router.  Useful if you want to hook other handlers to the HTTP Server
