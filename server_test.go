@@ -7,24 +7,41 @@ import (
 	"fmt"
 	"github.com/clambin/grafana-json"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"testing"
 	"time"
 )
 
+var Port int
+
 func TestMain(m *testing.M) {
 	handler := createHandler()
 	s := grafana_json.Server{Handler: handler}
+
+	listener, err := net.Listen("tcp4", ":0")
+	if err != nil {
+		panic(err)
+	}
+	Port = listener.Addr().(*net.TCPAddr).Port
+
+	httpServer := http.Server{
+		Handler: s.GetRouter(),
+	}
 	go func() {
-		if err := s.Run(8080); err != http.ErrServerClosed {
-			panic(err)
+		err2 := httpServer.Serve(listener)
+		if err2 != http.ErrServerClosed {
+			panic(err2)
 		}
 	}()
 
 	m.Run()
 
-	err := s.Shutdown(context.Background(), 30*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	err = httpServer.Shutdown(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -35,17 +52,15 @@ func TestAPIServer_Query(t *testing.T) {
 		return
 	}
 
-	body, err := call("http://localhost:8080/metrics", "GET", "")
-	if assert.Nil(t, err) {
-		assert.Contains(t, body, "http_duration_seconds")
-		assert.Contains(t, body, "http_duration_seconds_sum")
-		assert.Contains(t, body, "http_duration_seconds_count")
-	}
+	body, err := call(fmt.Sprintf("http://localhost:%d/metrics", Port), "GET", "")
+	require.Nil(t, err)
+	assert.Contains(t, body, "http_duration_seconds")
+	assert.Contains(t, body, "http_duration_seconds_sum")
+	assert.Contains(t, body, "http_duration_seconds_count")
 
-	body, err = call("http://localhost:8080/search", "POST", "")
-	if assert.Nil(t, err) {
-		assert.Equal(t, `["A","B","C","Crash"]`, body)
-	}
+	body, err = call(fmt.Sprintf("http://localhost:%d/search", Port), "POST", "")
+	require.NoError(t, err)
+	assert.Equal(t, `["A","B","C","Crash"]`, body)
 
 	req := `{
 	"maxDataPoints": 100,
@@ -60,11 +75,10 @@ func TestAPIServer_Query(t *testing.T) {
 	]
 }`
 
-	body, err = call("http://localhost:8080/query", "POST", req)
+	body, err = call(fmt.Sprintf("http://localhost:%d/query", Port), "POST", req)
 
-	if assert.Nil(t, err) {
-		assert.Equal(t, `[{"target":"A","datapoints":[[100,1577836800000],[101,1577836860000],[103,1577836920000]]},{"target":"B","datapoints":[[100,1577836800000],[99,1577836860000],[98,1577836920000]]}]`, body)
-	}
+	require.Nil(t, err)
+	assert.Equal(t, `[{"target":"A","datapoints":[[100,1577836800000],[101,1577836860000],[103,1577836920000]]},{"target":"B","datapoints":[[100,1577836800000],[99,1577836860000],[98,1577836920000]]}]`, body)
 }
 
 func TestAPIServer_TableQuery(t *testing.T) {
@@ -83,11 +97,10 @@ func TestAPIServer_TableQuery(t *testing.T) {
 		{ "target": "C", "type": "table" }
 	]
 }`
-	body, err := call("http://localhost:8080/query", "POST", req)
+	body, err := call(fmt.Sprintf("http://localhost:%d/query", Port), "POST", req)
 
-	if assert.Nil(t, err) {
-		assert.Equal(t, `[{"type":"table","columns":[{"text":"Time","type":"time"},{"text":"Label","type":"string"},{"text":"Series A","type":"number"},{"text":"Series B","type":"number"}],"rows":[["2020-01-01T00:00:00Z","foo",42,64.5],["2020-01-01T00:01:00Z","bar",43,100]]}]`, body)
-	}
+	require.Nil(t, err)
+	assert.Equal(t, `[{"type":"table","columns":[{"text":"Time","type":"time"},{"text":"Label","type":"string"},{"text":"Series A","type":"number"},{"text":"Series B","type":"number"}],"rows":[["2020-01-01T00:00:00Z","foo",42,64.5],["2020-01-01T00:01:00Z","bar",43,100]]}]`, body)
 }
 
 func TestAPIServer_MissingEndpoint(t *testing.T) {
@@ -96,16 +109,13 @@ func TestAPIServer_MissingEndpoint(t *testing.T) {
 
 	go func() {
 		err := s.Run(8082)
-
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	}()
 
 	assert.Eventually(t, func() bool {
-		body, err := call("http://localhost:8082/", "GET", "")
-		if assert.Nil(t, err) {
-			return assert.Equal(t, "Hello", body)
-		}
-		return false
+		body, err := call(fmt.Sprintf("http://localhost:%d/", Port), "GET", "")
+		require.NoError(t, err)
+		return assert.Equal(t, "Hello", body)
 	}, 500*time.Millisecond, 10*time.Millisecond)
 
 	req := `{
@@ -119,9 +129,8 @@ func TestAPIServer_MissingEndpoint(t *testing.T) {
 		{ "target": "C", "type": "table" }
 	]
 }`
-	_, err := call("http://localhost:8082/query", "POST", req)
-
-	assert.NotNil(t, err)
+	_, err := call(fmt.Sprintf("http://localhost:%d/query", Port), "POST", req)
+	assert.NoError(t, err)
 }
 
 func TestAPIServer_Annotations(t *testing.T) {
@@ -129,9 +138,9 @@ func TestAPIServer_Annotations(t *testing.T) {
 		return
 	}
 
-	body, err := call("http://localhost:8080/annotations", "OPTIONS", "")
+	body, err := call(fmt.Sprintf("http://localhost:%d/annotations", Port), "OPTIONS", "")
 
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "", body)
 
 	req := `{
@@ -146,23 +155,18 @@ func TestAPIServer_Annotations(t *testing.T) {
 		"query": ""
 	}
 }`
-	body, err = call("http://localhost:8080/annotations", "POST", req)
+	body, err = call(fmt.Sprintf("http://localhost:%d/annotations", Port), "POST", req)
 
-	if assert.Nil(t, err) {
-		assert.Equal(t, `[{"annotation":{"name":"snafu","datasource":"fubar","enable":true,"query":""},"time":1609459200000,"title":"foo","text":"bar","tags":["snafu"]}]`, body)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, `[{"annotation":{"name":"snafu","datasource":"fubar","enable":true,"query":""},"time":1609459200000,"title":"foo","text":"bar","tags":["snafu"]}]`, body)
 }
 
 func BenchmarkAPIServer(b *testing.B) {
-	if !assert.Eventually(b, func() bool {
-		body, err := call("http://localhost:8080/", "GET", "")
-		if assert.Nil(b, err) {
-			return assert.Equal(b, "Hello", body)
-		}
-		return false
-	}, 500*time.Millisecond, 10*time.Millisecond) {
-		return
-	}
+	require.Eventually(b, func() bool {
+		body, err := call(fmt.Sprintf("http://localhost:%d/", Port), "GET", "")
+		require.NoError(b, err)
+		return assert.Equal(b, "Hello", body)
+	}, 500*time.Millisecond, 10*time.Millisecond)
 
 	req := `{
 	"maxDataPoints": 100,
@@ -180,22 +184,21 @@ func BenchmarkAPIServer(b *testing.B) {
 	var err error
 
 	b.ResetTimer()
-	body, err = call("http://localhost:8080/query", "POST", req)
+	body, err = call(fmt.Sprintf("http://localhost:%d/query", Port), "POST", req)
 
-	if assert.Nil(b, err) {
-		assert.Equal(b, `[{"target":"A","datapoints":[[100,1577836800000],[101,1577836860000],[103,1577836920000]]},{"target":"B","datapoints":[[100,1577836800000],[99,1577836860000],[98,1577836920000]]}]`, body)
-	}
-
+	require.Nil(b, err)
+	assert.Equal(b, `[{"target":"A","datapoints":[[100,1577836800000],[101,1577836860000],[103,1577836920000]]},{"target":"B","datapoints":[[100,1577836800000],[99,1577836860000],[98,1577836920000]]}]`, body)
 }
 
 func serverRunning(t *testing.T) bool {
-	return assert.Eventually(t, func() bool {
-		body, err := call("http://localhost:8080/", "GET", "")
+	require.Eventually(t, func() bool {
+		body, err := call(fmt.Sprintf("http://localhost:%d/", Port), "GET", "")
 		if assert.Nil(t, err) {
 			return assert.Equal(t, "Hello", body)
 		}
 		return false
 	}, 500*time.Millisecond, 10*time.Millisecond)
+	return true
 }
 
 func call(url, method, body string) (response string, err error) {
