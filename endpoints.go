@@ -163,13 +163,14 @@ func (server *Server) annotations(w http.ResponseWriter, req *http.Request) {
 		},
 	}
 
+	var output []byte
 	var annotations []Annotation
 	if annotations, err = server.Handler.Endpoints().Annotations(request.Annotation.Name, request.Annotation.Query, &args); err == nil {
 		for index, annotation := range annotations {
 			annotation.request = request.Annotation
 			annotations[index] = annotation
 		}
-		bytes, err = json.Marshal(annotations)
+		output, err = json.Marshal(annotations)
 	}
 
 	if err != nil {
@@ -177,5 +178,5 @@ func (server *Server) annotations(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	_, _ = w.Write(bytes)
+	_, _ = w.Write(output)
 }
