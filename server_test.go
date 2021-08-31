@@ -15,14 +15,19 @@ import (
 
 func TestMain(m *testing.M) {
 	handler := createHandler()
-	s := grafana_json.Create(handler)
+	s := grafana_json.Server{Handler: handler}
 	go func() {
-		if err := s.Run(8080); err != nil {
+		if err := s.Run(8080); err != http.ErrServerClosed {
 			panic(err)
 		}
 	}()
 
 	m.Run()
+
+	err := s.Shutdown(context.Background(), 30*time.Millisecond)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func TestAPIServer_Query(t *testing.T) {
@@ -32,9 +37,9 @@ func TestAPIServer_Query(t *testing.T) {
 
 	body, err := call("http://localhost:8080/metrics", "GET", "")
 	if assert.Nil(t, err) {
-		assert.Contains(t, body, "grafana_api_duration_seconds")
-		assert.Contains(t, body, "grafana_api_duration_seconds_sum")
-		assert.Contains(t, body, "grafana_api_duration_seconds_count")
+		assert.Contains(t, body, "http_duration_seconds")
+		assert.Contains(t, body, "http_duration_seconds_sum")
+		assert.Contains(t, body, "http_duration_seconds_count")
 	}
 
 	body, err = call("http://localhost:8080/search", "POST", "")
@@ -85,13 +90,9 @@ func TestAPIServer_TableQuery(t *testing.T) {
 	}
 }
 
-func TestAPIServer_NoHandler(t *testing.T) {
-	assert.Panics(t, func() { grafana_json.Create(nil) })
-}
-
 func TestAPIServer_MissingEndpoint(t *testing.T) {
 	handler := testAPIHandler{noEndpoints: true}
-	s := grafana_json.Create(&handler)
+	s := grafana_json.Server{Handler: &handler}
 
 	go func() {
 		err := s.Run(8082)

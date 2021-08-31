@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	log "github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
@@ -20,7 +22,7 @@ func (server *Server) hello(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (server *Server) search(w http.ResponseWriter, _ *http.Request) {
-	targets := server.handler.Endpoints().Search()
+	targets := server.Handler.Endpoints().Search()
 	output, err := json.Marshal(targets)
 
 	if err != nil {
@@ -30,6 +32,11 @@ func (server *Server) search(w http.ResponseWriter, _ *http.Request) {
 
 	_, _ = w.Write(output)
 }
+
+var queryDuration = promauto.NewSummaryVec(prometheus.SummaryOpts{
+	Name: "grafana_api_query_duration_seconds",
+	Help: "Grafana API duration of query requests by target",
+}, []string{"type", "target"})
 
 func (server *Server) query(w http.ResponseWriter, req *http.Request) {
 	defer func(body io.ReadCloser) {
@@ -89,7 +96,7 @@ func (server *Server) query(w http.ResponseWriter, req *http.Request) {
 }
 
 func (server *Server) handleQueryRequest(ctx context.Context, target string, request *QueryRequest) (*QueryResponse, error) {
-	if server.handler.Endpoints().Query == nil {
+	if server.Handler.Endpoints().Query == nil {
 		return nil, errors.New("query endpoint not implemented")
 	}
 	args := TimeSeriesQueryArgs{
@@ -101,12 +108,12 @@ func (server *Server) handleQueryRequest(ctx context.Context, target string, req
 		},
 		MaxDataPoints: request.MaxDataPoints,
 	}
-	return server.handler.Endpoints().Query(ctx, target, &args)
+	return server.Handler.Endpoints().Query(ctx, target, &args)
 
 }
 
 func (server *Server) handleTableQueryRequest(ctx context.Context, target string, request *QueryRequest) (*TableQueryResponse, error) {
-	if server.handler.Endpoints().TableQuery == nil {
+	if server.Handler.Endpoints().TableQuery == nil {
 		return nil, errors.New("table query endpoint not implemented")
 	}
 	args := TableQueryArgs{
@@ -117,7 +124,7 @@ func (server *Server) handleTableQueryRequest(ctx context.Context, target string
 			},
 		},
 	}
-	return server.handler.Endpoints().TableQuery(ctx, target, &args)
+	return server.Handler.Endpoints().TableQuery(ctx, target, &args)
 }
 
 func (server *Server) annotations(w http.ResponseWriter, req *http.Request) {
@@ -157,7 +164,7 @@ func (server *Server) annotations(w http.ResponseWriter, req *http.Request) {
 	}
 
 	var annotations []Annotation
-	if annotations, err = server.handler.Endpoints().Annotations(request.Annotation.Name, request.Annotation.Query, &args); err == nil {
+	if annotations, err = server.Handler.Endpoints().Annotations(request.Annotation.Name, request.Annotation.Query, &args); err == nil {
 		for index, annotation := range annotations {
 			annotation.request = request.Annotation
 			annotations[index] = annotation
