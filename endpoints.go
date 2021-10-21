@@ -21,8 +21,17 @@ func (server *Server) hello(w http.ResponseWriter, _ *http.Request) {
 	_, _ = fmt.Fprintf(w, "Hello")
 }
 
+func (server *Server) getTargets() (targets []string) {
+	for _, h := range server.Handlers {
+		if h.Endpoints().Search != nil {
+			targets = append(targets, h.Endpoints().Search()...)
+		}
+	}
+	return
+}
+
 func (server *Server) search(w http.ResponseWriter, _ *http.Request) {
-	targets := server.Handler.Endpoints().Search()
+	targets := server.getTargets()
 	output, err := json.Marshal(targets)
 
 	if err != nil {
@@ -31,6 +40,22 @@ func (server *Server) search(w http.ResponseWriter, _ *http.Request) {
 	}
 
 	_, _ = w.Write(output)
+}
+
+func (server *Server) findHandler(target string) Handler {
+	for _, h := range server.Handlers {
+		if h.Endpoints().Search == nil {
+			continue
+		}
+
+		for _, t := range h.Endpoints().Search() {
+			if t == target {
+				return h
+			}
+		}
+	}
+
+	return nil
 }
 
 var queryDuration = promauto.NewSummaryVec(prometheus.SummaryOpts{
@@ -96,9 +121,18 @@ func (server *Server) query(w http.ResponseWriter, req *http.Request) {
 }
 
 func (server *Server) handleQueryRequest(ctx context.Context, target string, request *QueryRequest) (*QueryResponse, error) {
-	if server.Handler.Endpoints().Query == nil {
+	h := server.findHandler(target)
+
+	if h == nil {
+		return nil, fmt.Errorf("no handler found for target '%s'", target)
+	}
+
+	q := h.Endpoints().Query
+
+	if q == nil {
 		return nil, errors.New("query endpoint not implemented")
 	}
+
 	args := TimeSeriesQueryArgs{
 		CommonQueryArgs: CommonQueryArgs{
 			Range: QueryRequestRange{
@@ -108,12 +142,20 @@ func (server *Server) handleQueryRequest(ctx context.Context, target string, req
 		},
 		MaxDataPoints: request.MaxDataPoints,
 	}
-	return server.Handler.Endpoints().Query(ctx, target, &args)
 
+	return q(ctx, target, &args)
 }
 
 func (server *Server) handleTableQueryRequest(ctx context.Context, target string, request *QueryRequest) (*TableQueryResponse, error) {
-	if server.Handler.Endpoints().TableQuery == nil {
+	h := server.findHandler(target)
+
+	if h == nil {
+		return nil, fmt.Errorf("no handler found for target '%s'", target)
+	}
+
+	q := h.Endpoints().TableQuery
+
+	if q == nil {
 		return nil, errors.New("table query endpoint not implemented")
 	}
 	args := TableQueryArgs{
@@ -124,7 +166,7 @@ func (server *Server) handleTableQueryRequest(ctx context.Context, target string
 			},
 		},
 	}
-	return server.Handler.Endpoints().TableQuery(ctx, target, &args)
+	return q(ctx, target, &args)
 }
 
 func (server *Server) annotations(w http.ResponseWriter, req *http.Request) {
@@ -163,15 +205,28 @@ func (server *Server) annotations(w http.ResponseWriter, req *http.Request) {
 		},
 	}
 
-	var output []byte
 	var annotations []Annotation
-	if annotations, err = server.Handler.Endpoints().Annotations(request.Annotation.Name, request.Annotation.Query, &args); err == nil {
-		for index, annotation := range annotations {
-			annotation.request = request.Annotation
-			annotations[index] = annotation
+	for _, h := range server.Handlers {
+		if h.Endpoints().Annotations == nil {
+			continue
 		}
-		output, err = json.Marshal(annotations)
+
+		var newAnnotations []Annotation
+		newAnnotations, err = h.Endpoints().Annotations(request.Annotation.Name, request.Annotation.Query, &args)
+
+		if err != nil {
+			log.WithError(err).Warning("failed to get annotations from handler")
+			continue
+		}
+
+		for _, annotation := range newAnnotations {
+			annotation.request = request.Annotation
+			annotations = append(annotations, annotation)
+		}
 	}
+
+	var output []byte
+	output, err = json.Marshal(annotations)
 
 	if err != nil {
 		http.Error(w, "failed to process annotations request: "+err.Error(), http.StatusInternalServerError)

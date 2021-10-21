@@ -11,7 +11,7 @@ import (
 
 // Server implements a generic frameworks for the Grafana simpleJson API datasource
 type Server struct {
-	Handler    Handler
+	Handlers   []Handler
 	httpServer *http.Server
 }
 
@@ -56,14 +56,41 @@ func (server *Server) Shutdown(ctx context.Context, timeout time.Duration) error
 func (server *Server) GetRouter() (r *mux.Router) {
 	r = metrics.GetRouter()
 	r.HandleFunc("/", server.hello)
-	if server.Handler.Endpoints().Search != nil {
+	if server.hasSearch() {
 		r.HandleFunc("/search", server.search).Methods(http.MethodPost)
 	}
-	if server.Handler.Endpoints().Query != nil || server.Handler.Endpoints().TableQuery != nil {
+	if server.hasQuery() {
 		r.HandleFunc("/query", server.query).Methods(http.MethodPost)
 	}
-	if server.Handler.Endpoints().Annotations != nil {
+	if server.hasAnnotations() {
 		r.HandleFunc("/annotations", server.annotations).Methods(http.MethodPost, http.MethodOptions)
 	}
 	return
+}
+
+func (server *Server) hasSearch() bool {
+	for _, h := range server.Handlers {
+		if h.Endpoints().Search != nil {
+			return true
+		}
+	}
+	return false
+}
+
+func (server *Server) hasQuery() bool {
+	for _, h := range server.Handlers {
+		if h.Endpoints().Query != nil || h.Endpoints().TableQuery != nil {
+			return true
+		}
+	}
+	return false
+}
+
+func (server *Server) hasAnnotations() bool {
+	for _, h := range server.Handlers {
+		if h.Endpoints().Annotations != nil {
+			return true
+		}
+	}
+	return false
 }

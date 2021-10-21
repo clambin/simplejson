@@ -19,7 +19,7 @@ var Port int
 
 func TestMain(m *testing.M) {
 	s := grafana_json.Server{
-		Handler: createHandler(),
+		Handlers: []grafana_json.Handler{createHandler()},
 	}
 
 	listener, err := net.Listen("tcp4", ":0")
@@ -42,7 +42,7 @@ func TestMain(m *testing.M) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	err = httpServer.Shutdown(ctx)
+	err = s.Shutdown(ctx, time.Second)
 	if err != nil {
 		panic(err)
 	}
@@ -53,13 +53,13 @@ func TestAPIServer_Query(t *testing.T) {
 		return
 	}
 
-	body, err := call("/metrics", "GET", "")
+	body, err := call(Port, "/metrics", "GET", "")
 	require.Nil(t, err)
 	assert.Contains(t, body, "http_duration_seconds")
 	assert.Contains(t, body, "http_duration_seconds_sum")
 	assert.Contains(t, body, "http_duration_seconds_count")
 
-	body, err = call("/search", "POST", "")
+	body, err = call(Port, "/search", "POST", "")
 	require.NoError(t, err)
 	assert.Equal(t, `["A","B","C","Crash"]`, body)
 
@@ -76,7 +76,7 @@ func TestAPIServer_Query(t *testing.T) {
 	]
 }`
 
-	body, err = call("/query", "POST", req)
+	body, err = call(Port, "/query", "POST", req)
 
 	require.Nil(t, err)
 	assert.Equal(t, `[{"target":"A","datapoints":[[100,1577836800000],[101,1577836860000],[103,1577836920000]]},{"target":"B","datapoints":[[100,1577836800000],[99,1577836860000],[98,1577836920000]]}]`, body)
@@ -98,15 +98,14 @@ func TestAPIServer_TableQuery(t *testing.T) {
 		{ "target": "C", "type": "table" }
 	]
 }`
-	body, err := call("/query", "POST", req)
+	body, err := call(Port, "/query", "POST", req)
 
 	require.Nil(t, err)
 	assert.Equal(t, `[{"type":"table","columns":[{"text":"Time","type":"time"},{"text":"Label","type":"string"},{"text":"Series A","type":"number"},{"text":"Series B","type":"number"}],"rows":[["2020-01-01T00:00:00Z","foo",42,64.5],["2020-01-01T00:01:00Z","bar",43,100]]}]`, body)
 }
 
 func TestAPIServer_MissingEndpoint(t *testing.T) {
-	handler := testAPIHandler{noEndpoints: true}
-	s := grafana_json.Server{Handler: &handler}
+	s := grafana_json.Server{Handlers: []grafana_json.Handler{&testAPIHandler{noEndpoints: true}}}
 
 	go func() {
 		err := s.Run(8082)
@@ -114,7 +113,7 @@ func TestAPIServer_MissingEndpoint(t *testing.T) {
 	}()
 
 	assert.Eventually(t, func() bool {
-		body, err := call("/", "GET", "")
+		body, err := call(Port, "/", "GET", "")
 		require.NoError(t, err)
 		return assert.Equal(t, "Hello", body)
 	}, 500*time.Millisecond, 10*time.Millisecond)
@@ -130,7 +129,7 @@ func TestAPIServer_MissingEndpoint(t *testing.T) {
 		{ "target": "C", "type": "table" }
 	]
 }`
-	_, err := call("/query", "POST", req)
+	_, err := call(Port, "/query", "POST", req)
 	assert.NoError(t, err)
 }
 
@@ -139,7 +138,7 @@ func TestAPIServer_Annotations(t *testing.T) {
 		return
 	}
 
-	body, err := call("/annotations", "OPTIONS", "")
+	body, err := call(Port, "/annotations", "OPTIONS", "")
 
 	require.NoError(t, err)
 	assert.Equal(t, "", body)
@@ -156,7 +155,7 @@ func TestAPIServer_Annotations(t *testing.T) {
 		"query": ""
 	}
 }`
-	body, err = call("/annotations", "POST", req)
+	body, err = call(Port, "/annotations", "POST", req)
 
 	require.NoError(t, err)
 	assert.Equal(t, `[{"annotation":{"name":"snafu","datasource":"fubar","enable":true,"query":""},"time":1609459200000,"title":"foo","text":"bar","tags":["snafu"]}]`, body)
@@ -164,7 +163,7 @@ func TestAPIServer_Annotations(t *testing.T) {
 
 func BenchmarkAPIServer(b *testing.B) {
 	require.Eventually(b, func() bool {
-		body, err := call("/", "GET", "")
+		body, err := call(Port, "/", "GET", "")
 		require.NoError(b, err)
 		return assert.Equal(b, "Hello", body)
 	}, 500*time.Millisecond, 10*time.Millisecond)
@@ -185,7 +184,7 @@ func BenchmarkAPIServer(b *testing.B) {
 	var err error
 
 	b.ResetTimer()
-	body, err = call("/query", "POST", req)
+	body, err = call(Port, "/query", "POST", req)
 
 	require.Nil(b, err)
 	assert.Equal(b, `[{"target":"A","datapoints":[[100,1577836800000],[101,1577836860000],[103,1577836920000]]},{"target":"B","datapoints":[[100,1577836800000],[99,1577836860000],[98,1577836920000]]}]`, body)
@@ -193,7 +192,7 @@ func BenchmarkAPIServer(b *testing.B) {
 
 func serverRunning(t *testing.T) bool {
 	require.Eventually(t, func() bool {
-		body, err := call("/", "GET", "")
+		body, err := call(Port, "/", "GET", "")
 		if assert.Nil(t, err) {
 			return assert.Equal(t, "Hello", body)
 		}
@@ -202,8 +201,8 @@ func serverRunning(t *testing.T) bool {
 	return true
 }
 
-func call(path, method, body string) (response string, err error) {
-	url := fmt.Sprintf("http://localhost:%d%s", Port, path)
+func call(port int, path, method, body string) (response string, err error) {
+	url := fmt.Sprintf("http://localhost:%d%s", port, path)
 	client := &http.Client{}
 	reqBody := bytes.NewBuffer([]byte(body))
 	req, _ := http.NewRequest(method, url, reqBody)

@@ -10,7 +10,7 @@ import (
 
 func main() {
 	h := &handler{}
-	s := grafana_json.Server{Handler: h}
+	s := grafana_json.Server{Handlers: []grafana_json.Handler{h}}
 
 	log.SetLevel(log.DebugLevel)
 	_ = s.Run(8088)
