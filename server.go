@@ -36,12 +36,6 @@ type Endpoints struct {
 	Annotations func(name, query string, args *AnnotationRequestArgs) ([]Annotation, error)
 }
 
-// TargetTable is a convenience struct for handlers that support multiple targets
-type TargetTable map[string]struct {
-	QueryFunc      QueryFunc
-	TableQueryFunc TableQueryFunc
-}
-
 // Run the API Server. Convenience function.
 func (server *Server) Run(port int) error {
 	server.httpServer = &http.Server{
