@@ -21,16 +21,25 @@ type Handler interface {
 	Endpoints() Endpoints
 }
 
+type QueryFunc func(ctx context.Context, target string, args *TimeSeriesQueryArgs) (*QueryResponse, error)
+type TableQueryFunc func(ctx context.Context, target string, args *TableQueryArgs) (*TableQueryResponse, error)
+
 // Endpoints contains the functions that implements each of the SimpleJson endpoints
 type Endpoints struct {
 	// Search implements the /search endpoint: it returns the list of supported targets
 	Search func() []string
 	// Query implements the /query endpoint for dataSeries targets
-	Query func(ctx context.Context, target string, args *TimeSeriesQueryArgs) (*QueryResponse, error)
+	Query QueryFunc
 	// TableQuery implements the /query endpoint for table targets
-	TableQuery func(ctx context.Context, target string, args *TableQueryArgs) (*TableQueryResponse, error)
+	TableQuery TableQueryFunc
 	// Annotations implements the /annotations endpoint
 	Annotations func(name, query string, args *AnnotationRequestArgs) ([]Annotation, error)
+}
+
+// TargetTable is a convenience struct for handlers that support multiple targets
+type TargetTable map[string]struct {
+	QueryFunc      QueryFunc
+	TableQueryFunc TableQueryFunc
 }
 
 // Run the API Server. Convenience function.
