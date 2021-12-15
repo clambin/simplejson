@@ -3,65 +3,25 @@ package grafana_json
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	log "github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"time"
 )
 
-// endpoints
-
-func (server *Server) hello(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	_, _ = fmt.Fprintf(w, "Hello")
-}
-
-func (server *Server) getTargets() (targets []string) {
-	for _, h := range server.Handlers {
-		if h.Endpoints().Search != nil {
-			targets = append(targets, h.Endpoints().Search()...)
-		}
-	}
-	return
-}
-
-func (server *Server) search(w http.ResponseWriter, _ *http.Request) {
-	targets := server.getTargets()
-	output, err := json.Marshal(targets)
-
-	if err != nil {
-		http.Error(w, "failed to create search response: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	_, _ = w.Write(output)
-}
-
-func (server *Server) findHandler(target string) Handler {
-	for _, h := range server.Handlers {
-		if h.Endpoints().Search == nil {
-			continue
-		}
-
-		for _, t := range h.Endpoints().Search() {
-			if t == target {
-				return h
-			}
-		}
-	}
-
-	return nil
-}
-
 var queryDuration = promauto.NewSummaryVec(prometheus.SummaryOpts{
 	Name: "grafana_api_query_duration_seconds",
-	Help: "Grafana API duration of query requests by target",
-}, []string{"type", "target"})
+	Help: "Grafana SimpleJSON server duration of query requests by target",
+}, []string{"app", "type", "target"})
+
+var queryFailure = promauto.NewCounterVec(prometheus.CounterOpts{
+	Name: "grafana_api_query_failed_count",
+	Help: "Grafana SimpleJSON server count of failed requests",
+}, []string{"app", "type", "target"})
 
 func (server *Server) query(w http.ResponseWriter, req *http.Request) {
 	defer func(body io.ReadCloser) {
@@ -89,18 +49,18 @@ func (server *Server) query(w http.ResponseWriter, req *http.Request) {
 			var response *QueryResponse
 			if response, err = server.handleQueryRequest(req.Context(), target.Target, &request); err == nil {
 				responses = append(responses, response)
-			} else {
-				break
 			}
 		case "table":
 			var response *TableQueryResponse
 			if response, err = server.handleTableQueryRequest(req.Context(), target.Target, &request); err == nil {
 				responses = append(responses, response)
-			} else {
-				break
 			}
 		}
-		queryDuration.WithLabelValues(target.Type, target.Target).Observe(time.Now().Sub(start).Seconds())
+		queryDuration.WithLabelValues(server.Name, target.Type, target.Target).Observe(time.Now().Sub(start).Seconds())
+		if err != nil {
+			queryFailure.WithLabelValues(server.Name, target.Target, target.Target).Add(1.0)
+			break
+		}
 	}
 
 	if err != nil {
@@ -139,6 +99,7 @@ func (server *Server) handleQueryRequest(ctx context.Context, target string, req
 				From: request.Range.From,
 				To:   request.Range.To,
 			},
+			AdHocFilters: request.AdHocFilters,
 		},
 		MaxDataPoints: request.MaxDataPoints,
 	}
@@ -164,74 +125,24 @@ func (server *Server) handleTableQueryRequest(ctx context.Context, target string
 				From: request.Range.From,
 				To:   request.Range.To,
 			},
+			AdHocFilters: request.AdHocFilters,
 		},
 	}
 	return q(ctx, target, &args)
 }
 
-func (server *Server) annotations(w http.ResponseWriter, req *http.Request) {
-	defer func(body io.ReadCloser) {
-		_ = body.Close()
-	}(req.Body)
-
-	if req.Method == http.MethodOptions {
-		w.Header().Set("Access-Control-Allow-Headers", "accept, content-type")
-		w.Header().Set("Access-Control-Allow-Methods", "POST")
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
-	var request AnnotationRequest
-	bytes, err := ioutil.ReadAll(req.Body)
-	if err == nil {
-		err = json.Unmarshal(bytes, &request)
-	}
-
-	if err != nil {
-		http.Error(w, "failed to parse request: "+err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	log.WithFields(log.Fields{
-		"name":   request.Annotation.Name,
-		"enable": request.Annotation.Enable,
-		"query":  request.Annotation.Query,
-	}).Debug("annotation received")
-
-	args := AnnotationRequestArgs{
-		CommonQueryArgs{
-			Range: request.Range,
-		},
-	}
-
-	var annotations []Annotation
+func (server *Server) findHandler(target string) Handler {
 	for _, h := range server.Handlers {
-		if h.Endpoints().Annotations == nil {
+		if h.Endpoints().Search == nil {
 			continue
 		}
 
-		var newAnnotations []Annotation
-		newAnnotations, err = h.Endpoints().Annotations(request.Annotation.Name, request.Annotation.Query, &args)
-
-		if err != nil {
-			log.WithError(err).Warning("failed to get annotations from handler")
-			continue
-		}
-
-		for _, annotation := range newAnnotations {
-			annotation.request = request.Annotation
-			annotations = append(annotations, annotation)
+		for _, t := range h.Endpoints().Search() {
+			if t == target {
+				return h
+			}
 		}
 	}
 
-	var output []byte
-	output, err = json.Marshal(annotations)
-
-	if err != nil {
-		http.Error(w, "failed to process annotations request: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	_, _ = w.Write(output)
+	return nil
 }

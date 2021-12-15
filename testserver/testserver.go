@@ -24,6 +24,8 @@ func (h *handler) Endpoints() grafana_json.Endpoints {
 		Query:       h.Query,
 		TableQuery:  h.TableQuery,
 		Annotations: h.Annotations,
+		TagKeys:     h.TagKeys,
+		TagValues:   h.TagValues,
 	}
 }
 
@@ -31,10 +33,19 @@ func (h *handler) Search() []string {
 	return []string{"series", "table"}
 }
 
-func (h *handler) Query(_ context.Context, target string, _ *grafana_json.TimeSeriesQueryArgs) (response *grafana_json.QueryResponse, err error) {
+func (h *handler) Query(_ context.Context, target string, req *grafana_json.TimeSeriesQueryArgs) (response *grafana_json.QueryResponse, err error) {
 	if target != "series" {
 		err = errors.New("unsupported series")
 		return
+	}
+
+	for _, filter := range req.AdHocFilters {
+		log.WithFields(log.Fields{
+			"key":       filter.Key,
+			"operator":  filter.Operator,
+			"condition": filter.Condition,
+			"value":     filter.Value,
+		}).Info("table request received")
 	}
 
 	response = new(grafana_json.QueryResponse)
@@ -51,10 +62,19 @@ func (h *handler) Query(_ context.Context, target string, _ *grafana_json.TimeSe
 	return
 }
 
-func (h *handler) TableQuery(_ context.Context, target string, _ *grafana_json.TableQueryArgs) (response *grafana_json.TableQueryResponse, err error) {
+func (h *handler) TableQuery(_ context.Context, target string, req *grafana_json.TableQueryArgs) (response *grafana_json.TableQueryResponse, err error) {
 	if target != "table" {
 		err = errors.New("unsupported series")
 		return
+	}
+
+	for _, filter := range req.AdHocFilters {
+		log.WithFields(log.Fields{
+			"key":       filter.Key,
+			"operator":  filter.Operator,
+			"condition": filter.Condition,
+			"value":     filter.Value,
+		}).Info("table request received")
 	}
 
 	timestamps := make(grafana_json.TableQueryResponseTimeColumn, 60)
@@ -95,4 +115,12 @@ func (h *handler) Annotations(_, _ string, _ *grafana_json.AnnotationRequestArgs
 	})
 
 	return
+}
+
+func (h *handler) TagKeys(_ context.Context) (keys []string) {
+	return []string{"foo"}
+}
+
+func (h *handler) TagValues(_ context.Context, _ string) (values []string, err error) {
+	return []string{"A", "B", "C"}, nil
 }

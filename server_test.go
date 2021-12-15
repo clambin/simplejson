@@ -33,7 +33,7 @@ func TestMain(m *testing.M) {
 	}
 	go func() {
 		err2 := httpServer.Serve(listener)
-		if err2 != http.ErrServerClosed {
+		if !errors.Is(err2, http.ErrServerClosed) {
 			panic(err2)
 		}
 	}()
@@ -41,124 +41,11 @@ func TestMain(m *testing.M) {
 	m.Run()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
 	err = s.Shutdown(ctx, time.Second)
 	if err != nil {
 		panic(err)
 	}
-}
-
-func TestAPIServer_Query(t *testing.T) {
-	if !serverRunning(t) {
-		return
-	}
-
-	body, err := call(Port, "/metrics", "GET", "")
-	require.Nil(t, err)
-	assert.Contains(t, body, "http_duration_seconds")
-	assert.Contains(t, body, "http_duration_seconds_sum")
-	assert.Contains(t, body, "http_duration_seconds_count")
-
-	body, err = call(Port, "/search", "POST", "")
-	require.NoError(t, err)
-	assert.Equal(t, `["A","B","C","Crash"]`, body)
-
-	req := `{
-	"maxDataPoints": 100,
-	"interval": "1y",
-	"range": {
-		"from": "2020-01-01T00:00:00.000Z",
-		"to": "2020-12-31T00:00:00.000Z"
-	},
-	"targets": [
-		{ "target": "A", "type": "timeserie" },
-		{ "target": "B" }
-	]
-}`
-
-	body, err = call(Port, "/query", "POST", req)
-
-	require.Nil(t, err)
-	assert.Equal(t, `[{"target":"A","datapoints":[[100,1577836800000],[101,1577836860000],[103,1577836920000]]},{"target":"B","datapoints":[[100,1577836800000],[99,1577836860000],[98,1577836920000]]}]`, body)
-}
-
-func TestAPIServer_TableQuery(t *testing.T) {
-	if !serverRunning(t) {
-		return
-	}
-
-	req := `{
-	"maxDataPoints": 100,
-	"interval": "1y",
-	"range": {
-		"from": "2020-01-01T00:00:00.000Z",
-		"to": "2020-12-31T00:00:00.000Z"
-	},
-	"targets": [
-		{ "target": "C", "type": "table" }
-	]
-}`
-	body, err := call(Port, "/query", "POST", req)
-
-	require.Nil(t, err)
-	assert.Equal(t, `[{"type":"table","columns":[{"text":"Time","type":"time"},{"text":"Label","type":"string"},{"text":"Series A","type":"number"},{"text":"Series B","type":"number"}],"rows":[["2020-01-01T00:00:00Z","foo",42,64.5],["2020-01-01T00:01:00Z","bar",43,100]]}]`, body)
-}
-
-func TestAPIServer_MissingEndpoint(t *testing.T) {
-	s := grafana_json.Server{Handlers: []grafana_json.Handler{&testAPIHandler{noEndpoints: true}}}
-
-	go func() {
-		err := s.Run(8082)
-		require.NoError(t, err)
-	}()
-
-	assert.Eventually(t, func() bool {
-		body, err := call(Port, "/", "GET", "")
-		require.NoError(t, err)
-		return assert.Equal(t, "Hello", body)
-	}, 500*time.Millisecond, 10*time.Millisecond)
-
-	req := `{
-	"maxDataPoints": 100,
-	"interval": "1y",
-	"range": {
-		"from": "2020-01-01T00:00:00.000Z",
-		"to": "2020-12-31T00:00:00.000Z"
-	},
-	"targets": [
-		{ "target": "C", "type": "table" }
-	]
-}`
-	_, err := call(Port, "/query", "POST", req)
-	assert.NoError(t, err)
-}
-
-func TestAPIServer_Annotations(t *testing.T) {
-	if !serverRunning(t) {
-		return
-	}
-
-	body, err := call(Port, "/annotations", "OPTIONS", "")
-
-	require.NoError(t, err)
-	assert.Equal(t, "", body)
-
-	req := `{
-	"range": {
-		"from": "2020-01-01T00:00:00.000Z",
-		"to": "2020-12-31T00:00:00.000Z"
-	},
-	"annotation": {
-		"name": "snafu",
-		"datasource": "fubar",
-		"enable": true,
-		"query": ""
-	}
-}`
-	body, err = call(Port, "/annotations", "POST", req)
-
-	require.NoError(t, err)
-	assert.Equal(t, `[{"annotation":{"name":"snafu","datasource":"fubar","enable":true,"query":""},"time":1609459200000,"title":"foo","text":"bar","tags":["snafu"]}]`, body)
+	cancel()
 }
 
 func BenchmarkAPIServer(b *testing.B) {
@@ -190,15 +77,14 @@ func BenchmarkAPIServer(b *testing.B) {
 	assert.Equal(b, `[{"target":"A","datapoints":[[100,1577836800000],[101,1577836860000],[103,1577836920000]]},{"target":"B","datapoints":[[100,1577836800000],[99,1577836860000],[98,1577836920000]]}]`, body)
 }
 
-func serverRunning(t *testing.T) bool {
+func serverRunning(t *testing.T) {
 	require.Eventually(t, func() bool {
 		body, err := call(Port, "/", "GET", "")
 		if assert.Nil(t, err) {
-			return assert.Equal(t, "Hello", body)
+			return assert.Empty(t, body)
 		}
 		return false
 	}, 500*time.Millisecond, 10*time.Millisecond)
-	return true
 }
 
 func call(port int, path, method, body string) (response string, err error) {
@@ -235,52 +121,55 @@ type testAPIHandler struct {
 	queryResponses      map[string]*grafana_json.QueryResponse
 	tableQueryResponses map[string]*grafana_json.TableQueryResponse
 	annotations         []grafana_json.Annotation
+	tags                []string
+	tagValues           map[string][]string
 }
 
 func createHandler() (handler *testAPIHandler) {
-	handler = &testAPIHandler{}
-
-	handler.queryResponses = map[string]*grafana_json.QueryResponse{
-		"A": {
-			Target: "A",
-			DataPoints: []grafana_json.QueryResponseDataPoint{
-				{Timestamp: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC), Value: 100},
-				{Timestamp: time.Date(2020, 1, 1, 0, 1, 0, 0, time.UTC), Value: 101},
-				{Timestamp: time.Date(2020, 1, 1, 0, 2, 0, 0, time.UTC), Value: 103},
+	return &testAPIHandler{
+		queryResponses: map[string]*grafana_json.QueryResponse{
+			"A": {
+				Target: "A",
+				DataPoints: []grafana_json.QueryResponseDataPoint{
+					{Timestamp: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC), Value: 100},
+					{Timestamp: time.Date(2020, 1, 1, 0, 1, 0, 0, time.UTC), Value: 101},
+					{Timestamp: time.Date(2020, 1, 1, 0, 2, 0, 0, time.UTC), Value: 103},
+				},
+			},
+			"B": {
+				Target: "B",
+				DataPoints: []grafana_json.QueryResponseDataPoint{
+					{Timestamp: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC), Value: 100},
+					{Timestamp: time.Date(2020, 1, 1, 0, 1, 0, 0, time.UTC), Value: 99},
+					{Timestamp: time.Date(2020, 1, 1, 0, 2, 0, 0, time.UTC), Value: 98},
+				},
 			},
 		},
-		"B": {
-			Target: "B",
-			DataPoints: []grafana_json.QueryResponseDataPoint{
-				{Timestamp: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC), Value: 100},
-				{Timestamp: time.Date(2020, 1, 1, 0, 1, 0, 0, time.UTC), Value: 99},
-				{Timestamp: time.Date(2020, 1, 1, 0, 2, 0, 0, time.UTC), Value: 98},
+		tableQueryResponses: map[string]*grafana_json.TableQueryResponse{
+			"C": {
+				Columns: []grafana_json.TableQueryResponseColumn{
+					{Text: "Time", Data: grafana_json.TableQueryResponseTimeColumn{
+						time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
+						time.Date(2020, 1, 1, 0, 1, 0, 0, time.UTC),
+					}},
+					{Text: "Label", Data: grafana_json.TableQueryResponseStringColumn{"foo", "bar"}},
+					{Text: "Series A", Data: grafana_json.TableQueryResponseNumberColumn{42, 43}},
+					{Text: "Series B", Data: grafana_json.TableQueryResponseNumberColumn{64.5, 100.0}},
+				},
 			},
+		},
+		annotations: []grafana_json.Annotation{{
+			Time:  time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
+			Title: "foo",
+			Text:  "bar",
+			Tags:  []string{"snafu"},
+		}},
+		tags: []string{"foo", "bar"},
+		tagValues: map[string][]string{
+			"foo": {"A", "B"},
+			"bar": {"1", "2"},
 		},
 	}
-
-	handler.tableQueryResponses = map[string]*grafana_json.TableQueryResponse{
-		"C": {
-			Columns: []grafana_json.TableQueryResponseColumn{
-				{Text: "Time", Data: grafana_json.TableQueryResponseTimeColumn{
-					time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
-					time.Date(2020, 1, 1, 0, 1, 0, 0, time.UTC),
-				}},
-				{Text: "Label", Data: grafana_json.TableQueryResponseStringColumn{"foo", "bar"}},
-				{Text: "Series A", Data: grafana_json.TableQueryResponseNumberColumn{42, 43}},
-				{Text: "Series B", Data: grafana_json.TableQueryResponseNumberColumn{64.5, 100.0}},
-			},
-		},
-	}
-
-	handler.annotations = []grafana_json.Annotation{{
-		Time:  time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
-		Title: "foo",
-		Text:  "bar",
-		Tags:  []string{"snafu"},
-	}}
-
-	return
 }
 
 func (handler *testAPIHandler) Endpoints() grafana_json.Endpoints {
@@ -292,6 +181,8 @@ func (handler *testAPIHandler) Endpoints() grafana_json.Endpoints {
 		Query:       handler.Query,
 		TableQuery:  handler.TableQuery,
 		Annotations: handler.Annotations,
+		TagKeys:     handler.Tags,
+		TagValues:   handler.TagValues,
 	}
 }
 
@@ -326,6 +217,18 @@ func (handler *testAPIHandler) TableQuery(_ context.Context, target string, _ *g
 func (handler *testAPIHandler) Annotations(_, _ string, _ *grafana_json.AnnotationRequestArgs) (annotations []grafana_json.Annotation, err error) {
 	for _, ann := range handler.annotations {
 		annotations = append(annotations, ann)
+	}
+	return
+}
+
+func (handler *testAPIHandler) Tags(_ context.Context) (tags []string) {
+	return handler.tags
+}
+
+func (handler *testAPIHandler) TagValues(_ context.Context, tag string) (values []string, err error) {
+	var ok bool
+	if values, ok = handler.tagValues[tag]; ok == false {
+		err = fmt.Errorf("unsupported tag '%s'", tag)
 	}
 	return
 }

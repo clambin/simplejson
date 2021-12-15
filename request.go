@@ -13,7 +13,8 @@ type QueryRequest struct {
 
 // CommonQueryArgs contains common arguments used by endpoints
 type CommonQueryArgs struct {
-	Range QueryRequestRange `json:"range"`
+	Range        QueryRequestRange `json:"range"`
+	AdHocFilters []AdHocFilter
 }
 
 // TimeSeriesQueryArgs contains the arguments for a Query
@@ -39,6 +40,14 @@ type QueryRequestRange struct {
 type QueryRequestTarget struct {
 	Target string `json:"target"`
 	Type   string `json:"type"`
+}
+
+// AdHocFilter specifies the ad hoc filters, whose keys & values are returned by the /tag-key and /tag-values endpoints.
+type AdHocFilter struct {
+	Value     string `json:"value"`
+	Operator  string `json:"operator"`
+	Condition string `json:"condition"`
+	Key       string `json:"key"`
 }
 
 // type QueryRequestDuration time.Duration
