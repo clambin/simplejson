@@ -32,12 +32,6 @@ func (server *Server) annotations(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	log.WithFields(log.Fields{
-		"name":   request.Annotation.Name,
-		"enable": request.Annotation.Enable,
-		"query":  request.Annotation.Query,
-	}).Debug("annotation received")
-
 	args := AnnotationRequestArgs{
 		CommonQueryArgs{
 			Range: request.Range,
