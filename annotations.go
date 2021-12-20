@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"strings"
 )
 
 func (server *Server) annotations(w http.ResponseWriter, req *http.Request) {
@@ -33,9 +34,9 @@ func (server *Server) annotations(w http.ResponseWriter, req *http.Request) {
 	}
 
 	log.WithFields(log.Fields{
-		"name":   request.Annotation.Name,
+		"name":   strings.ReplaceAll(request.Annotation.Name, "\n", ""),
 		"enable": request.Annotation.Enable,
-		"query":  request.Annotation.Query,
+		"query":  strings.ReplaceAll(request.Annotation.Query, "\n", ""),
 	}).Debug("annotation received")
 
 	args := AnnotationRequestArgs{
