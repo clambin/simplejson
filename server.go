@@ -3,7 +3,7 @@ package grafana_json
 import (
 	"context"
 	"fmt"
-	"github.com/clambin/gotools/metrics"
+	"github.com/clambin/metrics"
 	"github.com/gorilla/mux"
 	"net/http"
 	"time"

@@ -3,9 +3,8 @@ module github.com/clambin/grafana-json
 go 1.16
 
 require (
-	github.com/clambin/gotools v0.4.4 // indirect
+	github.com/clambin/metrics v0.1.0
 	github.com/gorilla/mux v1.8.0
-	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.11.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.7.0
