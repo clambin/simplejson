@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	log "github.com/sirupsen/logrus"
 	"io"
-	"io/ioutil"
 	"net/http"
 )
 
@@ -22,7 +21,7 @@ func (server *Server) annotations(w http.ResponseWriter, req *http.Request) {
 	}
 
 	var request AnnotationRequest
-	bytes, err := ioutil.ReadAll(req.Body)
+	bytes, err := io.ReadAll(req.Body)
 	if err == nil {
 		err = json.Unmarshal(bytes, &request)
 	}

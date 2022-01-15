@@ -8,7 +8,7 @@ import (
 	"github.com/clambin/grafana-json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"testing"
@@ -88,7 +88,7 @@ func serverRunning(t *testing.T) {
 }
 
 func call(port int, path, method, body string) (response string, err error) {
-	url := fmt.Sprintf("http://localhost:%d%s", port, path)
+	url := fmt.Sprintf("http://127.0.0.1:%d%s", port, path)
 	client := &http.Client{}
 	reqBody := bytes.NewBuffer([]byte(body))
 	req, _ := http.NewRequest(method, url, reqBody)
@@ -99,8 +99,8 @@ func call(port int, path, method, body string) (response string, err error) {
 			_ = resp.Body.Close()
 		}()
 		var buff []byte
-		if resp.StatusCode == 200 {
-			if buff, err = ioutil.ReadAll(resp.Body); err == nil {
+		if resp.StatusCode == http.StatusOK {
+			if buff, err = io.ReadAll(resp.Body); err == nil {
 				response = string(buff)
 			}
 		} else {

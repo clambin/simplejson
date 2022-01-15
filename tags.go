@@ -3,7 +3,6 @@ package grafana_json
 import (
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"net/http"
 )
 
@@ -49,7 +48,7 @@ func (server *Server) tagValues(w http.ResponseWriter, req *http.Request) {
 		_ = body.Close()
 	}(req.Body)
 
-	bytes, err := ioutil.ReadAll(req.Body)
+	bytes, err := io.ReadAll(req.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

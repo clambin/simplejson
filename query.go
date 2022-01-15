@@ -8,7 +8,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"time"
 )
@@ -28,7 +27,7 @@ func (server *Server) query(w http.ResponseWriter, req *http.Request) {
 		_ = body.Close()
 	}(req.Body)
 
-	bytes, err := ioutil.ReadAll(req.Body)
+	bytes, err := io.ReadAll(req.Body)
 
 	var request QueryRequest
 	if err == nil {
