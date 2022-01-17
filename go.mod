@@ -3,7 +3,7 @@ module github.com/clambin/grafana-json
 go 1.17
 
 require (
-	github.com/clambin/go-metrics v0.2.0
+	github.com/clambin/go-metrics v0.2.1
 	github.com/gorilla/mux v1.8.0
 	github.com/prometheus/client_golang v1.11.0
 	github.com/sirupsen/logrus v1.8.1
