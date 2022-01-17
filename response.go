@@ -6,26 +6,25 @@ import (
 	"time"
 )
 
-// QueryResponse is returned by a Query.  Target contains the name of the target, DataPoints is
-// a slice of QueryResponseDataPoint entries
+// QueryResponse is returned by a Query.
 type QueryResponse struct {
-	Target     string                   `json:"target"`
-	DataPoints []QueryResponseDataPoint `json:"datapoints"`
+	Target     string                   `json:"target"`     // name of the target
+	DataPoints []QueryResponseDataPoint `json:"datapoints"` // values for the target
 }
 
-// QueryResponseDataPoint contains one entry returned by a Query
+// QueryResponseDataPoint contains one entry returned by a Query.
 type QueryResponseDataPoint struct {
 	Timestamp time.Time
 	Value     int64
 }
 
-// MarshalJSON converts a QueryResponseDataPoint to JSON
+// MarshalJSON converts a QueryResponseDataPoint to JSON.
 func (d *QueryResponseDataPoint) MarshalJSON() ([]byte, error) {
 	out := []int64{d.Value, d.Timestamp.UnixNano() / 1000000}
 	return json.Marshal(out)
 }
 
-// UnmarshalJSON converts a JSON structure to a QueryResponseDataPoint
+// UnmarshalJSON converts a JSON structure to a QueryResponseDataPoint.
 func (d *QueryResponseDataPoint) UnmarshalJSON(input []byte) (err error) {
 	var in []int64
 
@@ -38,26 +37,26 @@ func (d *QueryResponseDataPoint) UnmarshalJSON(input []byte) (err error) {
 	return
 }
 
-// TableQueryResponse is returned by a TableQuery, i.e. a slice of TableQueryResponseColumn structures,
+// TableQueryResponse is returned by a TableQuery, i.e. a slice of TableQueryResponseColumn structures.
 type TableQueryResponse struct {
 	Columns []TableQueryResponseColumn
 }
 
 // TableQueryResponseColumn is a column returned by a TableQuery.  Text holds the column's header,
 // Data holds the slice of values and should be a TableQueryResponseTimeColumn, a TableQueryResponseStringColumn
-// or a TableQueryResponseNumberColumn
+// or a TableQueryResponseNumberColumn.
 type TableQueryResponseColumn struct {
 	Text string
 	Data interface{}
 }
 
-// TableQueryResponseTimeColumn holds a slice of time.Time values (one per row)
+// TableQueryResponseTimeColumn holds a slice of time.Time values (one per row).
 type TableQueryResponseTimeColumn []time.Time
 
-// TableQueryResponseStringColumn holds a slice of string values (one per row)
+// TableQueryResponseStringColumn holds a slice of string values (one per row).
 type TableQueryResponseStringColumn []string
 
-// TableQueryResponseNumberColumn holds a slice of number values (one per row)
+// TableQueryResponseNumberColumn holds a slice of number values (one per row).
 type TableQueryResponseNumberColumn []float64
 
 type tableResponse struct {
@@ -73,7 +72,7 @@ type tableResponseColumn struct {
 
 type tableResponseRow []interface{}
 
-// MarshalJSON converts a TableQueryResponse to JSON
+// MarshalJSON converts a TableQueryResponse to JSON.
 func (table *TableQueryResponse) MarshalJSON() (output []byte, err error) {
 	var columns []tableResponseColumn
 	var rows []tableResponseRow
@@ -157,16 +156,15 @@ func (table *TableQueryResponse) buildRows(rowCount int) (rows []tableResponseRo
 }
 
 // Annotation response. The annotation endpoint returns a slice of these.
-// The (non-exported) request is added by the grafana-json server
 type Annotation struct {
-	request AnnotationRequestDetails
 	Time    time.Time
 	Title   string
 	Text    string
 	Tags    []string
+	request AnnotationRequestDetails
 }
 
-// MarshalJSON converts an Annotation to JSON
+// MarshalJSON converts an Annotation to JSON.
 func (annotation *Annotation) MarshalJSON() (output []byte, err error) {
 	// must be an easier way than this?
 	jsonResponse := struct {
