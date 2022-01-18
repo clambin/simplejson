@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/clambin/simplejson"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 )
@@ -24,17 +25,16 @@ func TestRequests(t *testing.T) {
 
 	var output simplejson.TimeSeriesRequest
 
-	if err := json.Unmarshal([]byte(input), &output); assert.Nil(t, err) {
-		assert.Equal(t, uint64(100), output.MaxDataPoints)
-		// assert.Equal(t, server.QueryRequestDuration(1*time.Hour), output.Interval)
-		// assert.Equal(t, 1*time.Hour, time.Duration(output.Interval))
-		assert.Equal(t, time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC), output.Range.From)
-		assert.Equal(t, time.Date(2020, 12, 31, 0, 0, 0, 0, time.UTC), output.Range.To)
-		if assert.Len(t, output.Targets, 2); err == nil {
-			assert.Equal(t, "A", output.Targets[0].Target)
-			assert.Equal(t, "dataserie", output.Targets[0].Type)
-			assert.Equal(t, "B", output.Targets[1].Target)
-			assert.Equal(t, "table", output.Targets[1].Type)
-		}
-	}
+	err := json.Unmarshal([]byte(input), &output)
+	require.NoError(t, err)
+	assert.Equal(t, uint64(100), output.MaxDataPoints)
+	// assert.Equal(t, server.QueryRequestDuration(1*time.Hour), output.Interval)
+	// assert.Equal(t, 1*time.Hour, time.Duration(output.Interval))
+	assert.Equal(t, time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC), output.Range.From)
+	assert.Equal(t, time.Date(2020, 12, 31, 0, 0, 0, 0, time.UTC), output.Range.To)
+	require.Len(t, output.Targets, 2)
+	assert.Equal(t, "A", output.Targets[0].Target)
+	assert.Equal(t, "dataserie", output.Targets[0].Type)
+	assert.Equal(t, "B", output.Targets[1].Target)
+	assert.Equal(t, "table", output.Targets[1].Type)
 }

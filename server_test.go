@@ -72,7 +72,7 @@ func BenchmarkAPIServer(b *testing.B) {
 	b.ResetTimer()
 	body, err = call(Port, "/query", http.MethodPost, req)
 
-	require.Nil(b, err)
+	require.NoError(b, err)
 	assert.Equal(b, `[{"target":"A","datapoints":[[100,1577836800000],[101,1577836860000],[103,1577836920000]]},{"target":"B","datapoints":[[100,1577836800000],[99,1577836860000],[98,1577836920000]]}]`, body)
 }
 

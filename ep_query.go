@@ -2,12 +2,10 @@ package simplejson
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"io"
 	"net/http"
 	"time"
 )
@@ -23,60 +21,32 @@ var queryFailure = promauto.NewCounterVec(prometheus.CounterOpts{
 }, []string{"app", "type", "target"})
 
 func (server *Server) query(w http.ResponseWriter, req *http.Request) {
-	defer func(body io.ReadCloser) {
-		_ = body.Close()
-	}(req.Body)
-
-	bytes, err := io.ReadAll(req.Body)
-
 	var request TimeSeriesRequest
-	if err == nil {
-		err = json.Unmarshal(bytes, &request)
-	}
-
-	if err != nil {
-		http.Error(w, "failed to parse request: "+err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	responses := make([]interface{}, 0, len(request.Targets))
-
-	for _, target := range request.Targets {
-		start := time.Now()
-		switch target.Type {
-		case "timeserie", "":
-			var response *TimeSeriesResponse
-			if response, err = server.handleQueryRequest(req.Context(), target.Target, &request); err == nil {
-				responses = append(responses, response)
+	handleEndpoint(w, req, &request, func() (interface{}, error) {
+		var err error
+		responses := make([]interface{}, 0, len(request.Targets))
+		for _, target := range request.Targets {
+			start := time.Now()
+			switch target.Type {
+			case "timeserie", "":
+				var response *TimeSeriesResponse
+				if response, err = server.handleQueryRequest(req.Context(), target.Target, &request); err == nil {
+					responses = append(responses, response)
+				}
+			case "table":
+				var response *TableQueryResponse
+				if response, err = server.handleTableQueryRequest(req.Context(), target.Target, &request); err == nil {
+					responses = append(responses, response)
+				}
 			}
-		case "table":
-			var response *TableQueryResponse
-			if response, err = server.handleTableQueryRequest(req.Context(), target.Target, &request); err == nil {
-				responses = append(responses, response)
+			queryDuration.WithLabelValues(server.Name, target.Type, target.Target).Observe(time.Now().Sub(start).Seconds())
+			if err != nil {
+				queryFailure.WithLabelValues(server.Name, target.Type, target.Target).Add(1.0)
+				break
 			}
 		}
-		queryDuration.WithLabelValues(server.Name, target.Type, target.Target).Observe(time.Now().Sub(start).Seconds())
-		if err != nil {
-			queryFailure.WithLabelValues(server.Name, target.Type, target.Target).Add(1.0)
-			break
-		}
-	}
-
-	if err != nil {
-		http.Error(w, "failed to create response: "+err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	var output []byte
-	output, err = json.Marshal(responses)
-
-	if err != nil {
-		http.Error(w, "unable to create response: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write(output)
+		return responses, err
+	})
 }
 
 func (server *Server) handleQueryRequest(ctx context.Context, target string, request *TimeSeriesRequest) (*TimeSeriesResponse, error) {

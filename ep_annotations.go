@@ -1,17 +1,10 @@
 package simplejson
 
 import (
-	"encoding/json"
-	log "github.com/sirupsen/logrus"
-	"io"
 	"net/http"
 )
 
 func (server *Server) annotations(w http.ResponseWriter, req *http.Request) {
-	defer func(body io.ReadCloser) {
-		_ = body.Close()
-	}(req.Body)
-
 	if req.Method == http.MethodOptions {
 		w.Header().Set("Access-Control-Allow-Headers", "accept, content-type")
 		w.Header().Set("Access-Control-Allow-Methods", "POST")
@@ -21,49 +14,30 @@ func (server *Server) annotations(w http.ResponseWriter, req *http.Request) {
 	}
 
 	var request Request
-	bytes, err := io.ReadAll(req.Body)
-	if err == nil {
-		err = json.Unmarshal(bytes, &request)
-	}
-
-	if err != nil {
-		http.Error(w, "failed to parse request: "+err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	args := RequestArgs{
-		Args: Args{
-			Range: request.Range,
-		},
-	}
-
-	var annotations []Annotation
-	for _, h := range server.Handlers {
-		if h.Endpoints().Annotations == nil {
-			continue
+	handleEndpoint(w, req, &request, func() (response interface{}, err error) {
+		args := RequestArgs{
+			Args: Args{
+				Range: request.Range,
+			},
 		}
+		var annotations []Annotation
+		for _, h := range server.Handlers {
+			if h.Endpoints().Annotations == nil {
+				continue
+			}
 
-		var newAnnotations []Annotation
-		newAnnotations, err = h.Endpoints().Annotations(request.Annotation.Name, request.Annotation.Query, &args)
+			var newAnnotations []Annotation
+			newAnnotations, err = h.Endpoints().Annotations(request.Annotation.Name, request.Annotation.Query, &args)
 
-		if err != nil {
-			log.WithError(err).Warning("failed to get annotation from handler")
-			continue
+			if err != nil {
+				return
+			}
+
+			for _, a := range newAnnotations {
+				a.Request = request.Annotation
+				annotations = append(annotations, a)
+			}
 		}
-
-		for _, a := range newAnnotations {
-			a.Request = request.Annotation
-			annotations = append(annotations, a)
-		}
-	}
-
-	var output []byte
-	output, err = json.Marshal(annotations)
-
-	if err != nil {
-		http.Error(w, "failed to process annotation request: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	_, _ = w.Write(output)
+		return annotations, nil
+	})
 }

@@ -1,8 +1,6 @@
 package simplejson
 
 import (
-	"encoding/json"
-	"io"
 	"net/http"
 )
 
@@ -20,67 +18,36 @@ type tagValue struct {
 }
 
 func (server *Server) tagKeys(w http.ResponseWriter, req *http.Request) {
-	defer func(body io.ReadCloser) {
-		_ = body.Close()
-	}(req.Body)
-
-	var keys []tagKey
-	for _, handler := range server.Handlers {
-		if handler.Endpoints().TagKeys != nil {
-			for _, newKey := range handler.Endpoints().TagKeys(req.Context()) {
-				keys = append(keys, tagKey{Type: "string", Text: newKey})
+	handleEndpoint(w, req, nil, func() (interface{}, error) {
+		var keys []tagKey
+		for _, handler := range server.Handlers {
+			if handler.Endpoints().TagKeys != nil {
+				for _, newKey := range handler.Endpoints().TagKeys(req.Context()) {
+					keys = append(keys, tagKey{Type: "string", Text: newKey})
+				}
 			}
 		}
-	}
-
-	output, err := json.Marshal(keys)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write(output)
+		return keys, nil
+	})
 }
 
 func (server *Server) tagValues(w http.ResponseWriter, req *http.Request) {
-	defer func(body io.ReadCloser) {
-		_ = body.Close()
-	}(req.Body)
-
-	bytes, err := io.ReadAll(req.Body)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
 	var key tagValueKey
-	if err = json.Unmarshal(bytes, &key); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	handleEndpoint(w, req, &key, func() (interface{}, error) {
+		var tagValues []tagValue
+		for _, handler := range server.Handlers {
+			if handler.Endpoints().TagValues != nil {
+				values, err := handler.Endpoints().TagValues(req.Context(), key.Key)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return nil, err
+				}
 
-	var tagValues []tagValue
-	for _, handler := range server.Handlers {
-		if handler.Endpoints().TagValues != nil {
-			var values []string
-			values, err = handler.Endpoints().TagValues(req.Context(), key.Key)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			for _, value := range values {
-				tagValues = append(tagValues, tagValue{Text: value})
+				for _, value := range values {
+					tagValues = append(tagValues, tagValue{Text: value})
+				}
 			}
 		}
-	}
-
-	if bytes, err = json.Marshal(tagValues); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write(bytes)
+		return tagValues, nil
+	})
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/clambin/simplejson"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 )
@@ -21,19 +22,17 @@ func TestReadResponseDataSeries(t *testing.T) {
 
 	var output []simplejson.TimeSeriesResponse
 
-	if err := json.Unmarshal([]byte(input), &output); assert.Nil(t, err) {
-		if assert.Len(t, output, 1) {
-			assert.Equal(t, "A", output[0].Target)
-			if assert.Len(t, output[0].DataPoints, 3) {
-				assert.Equal(t, int64(100), output[0].DataPoints[0].Value)
-				assert.True(t, output[0].DataPoints[0].Timestamp.Equal(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)))
-				assert.Equal(t, int64(101), output[0].DataPoints[1].Value)
-				assert.True(t, output[0].DataPoints[1].Timestamp.Equal(time.Date(2020, 1, 1, 0, 1, 0, 0, time.UTC)))
-				assert.Equal(t, int64(102), output[0].DataPoints[2].Value)
-				assert.True(t, output[0].DataPoints[2].Timestamp.Equal(time.Date(2020, 1, 1, 0, 2, 0, 0, time.UTC)))
-			}
-		}
-	}
+	err := json.Unmarshal([]byte(input), &output)
+	require.NoError(t, err)
+	require.Len(t, output, 1)
+	assert.Equal(t, "A", output[0].Target)
+	require.Len(t, output[0].DataPoints, 3)
+	assert.Equal(t, int64(100), output[0].DataPoints[0].Value)
+	assert.True(t, output[0].DataPoints[0].Timestamp.Equal(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)))
+	assert.Equal(t, int64(101), output[0].DataPoints[1].Value)
+	assert.True(t, output[0].DataPoints[1].Timestamp.Equal(time.Date(2020, 1, 1, 0, 1, 0, 0, time.UTC)))
+	assert.Equal(t, int64(102), output[0].DataPoints[2].Value)
+	assert.True(t, output[0].DataPoints[2].Timestamp.Equal(time.Date(2020, 1, 1, 0, 2, 0, 0, time.UTC)))
 }
 
 func TestWriteResponseDataSeries(t *testing.T) {
@@ -49,10 +48,8 @@ func TestWriteResponseDataSeries(t *testing.T) {
 	expected := `[{"target":"A","datapoints":[[100,1577836800000],[101,1577840400000],[102,1577844000000]]}]`
 
 	out, err := json.Marshal(in)
-
-	if assert.Nil(t, err) {
-		assert.Equal(t, expected, string(out))
-	}
+	require.NoError(t, err)
+	assert.Equal(t, expected, string(out))
 }
 
 func TestWriteResponseTable(t *testing.T) {
@@ -71,9 +68,8 @@ func TestWriteResponseTable(t *testing.T) {
 
 	out, err := json.Marshal(in)
 
-	if assert.Nil(t, err) {
-		assert.Equal(t, expected, string(out))
-	}
+	require.NoError(t, err)
+	assert.Equal(t, expected, string(out))
 }
 
 func TestWriteBadResponseTable(t *testing.T) {
@@ -89,8 +85,7 @@ func TestWriteBadResponseTable(t *testing.T) {
 	}}
 
 	_, err := json.Marshal(in)
-
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestWriteCombinedResponse(t *testing.T) {
@@ -125,7 +120,6 @@ func TestWriteCombinedResponse(t *testing.T) {
 	output, err := json.Marshal(packaged)
 
 	expected := `[{"target":"A","datapoints":[[100,1577836800000],[101,1577840400000],[102,1577844000000]]},{"Columns":[{"Text":"Time","Data":["2020-01-01T00:00:00Z","2020-01-01T00:00:00Z"]},{"Text":"Label","Data":["foo","bar"]},{"Text":"Series A","Data":[42,43]},{"Text":"Series B","Data":[64.5,100]}]}]`
-	if assert.Nil(t, err) {
-		assert.Equal(t, expected, string(output))
-	}
+	require.NoError(t, err)
+	assert.Equal(t, expected, string(output))
 }

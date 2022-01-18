@@ -52,8 +52,6 @@ func TestAhHocFilter(t *testing.T) {
 }`
 
 	body, err := call(Port, "/query", http.MethodPost, req)
-
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, `[{"target":"B","datapoints":[[100,1577836800000],[99,1577836860000],[98,1577836920000]]}]`, body)
-
 }
