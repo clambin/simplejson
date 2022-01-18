@@ -22,10 +22,10 @@ func TestTagValues(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, `[{"text":"A"},{"text":"B"}]`, body)
 
-	body, err = call(Port, "/tag-values", http.MethodPost, `{"key": "foo"`)
+	_, err = call(Port, "/tag-values", http.MethodPost, `{"key": "foo"`)
 	assert.Error(t, err)
 
-	body, err = call(Port, "/tag-values", http.MethodPost, `{"key": "snafu"}`)
+	_, err = call(Port, "/tag-values", http.MethodPost, `{"key": "snafu"}`)
 	assert.Error(t, err)
 }
 
