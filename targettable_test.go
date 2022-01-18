@@ -3,7 +3,7 @@ package simplejson_test
 import (
 	"context"
 	"fmt"
-	"github.com/clambin/grafana-json"
+	"github.com/clambin/simplejson"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

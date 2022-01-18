@@ -2,7 +2,7 @@ package simplejson_test
 
 import (
 	"encoding/json"
-	"github.com/clambin/grafana-json"
+	"github.com/clambin/simplejson"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"

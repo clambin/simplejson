@@ -1,7 +1,7 @@
 package simplejson_test
 
 import (
-	grafanaJSON "github.com/clambin/grafana-json"
+	"github.com/clambin/simplejson"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"net/http"
@@ -62,7 +62,7 @@ func TestAPIServer_TableQuery(t *testing.T) {
 }
 
 func TestAPIServer_MissingEndpoint(t *testing.T) {
-	s := grafanaJSON.Server{Handlers: []grafanaJSON.Handler{&testAPIHandler{noEndpoints: true}}}
+	s := simplejson.Server{Handlers: []simplejson.Handler{&testAPIHandler{noEndpoints: true}}}
 
 	go func() {
 		err := s.Run(8082)

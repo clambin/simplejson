@@ -1,4 +1,4 @@
-module github.com/clambin/grafana-json
+module github.com/clambin/simplejson
 
 go 1.17
 

@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"errors"
-	simplejson "github.com/clambin/grafana-json"
+	"github.com/clambin/simplejson"
 	log "github.com/sirupsen/logrus"
 	"time"
 )

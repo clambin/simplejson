@@ -2,7 +2,7 @@ package simplejson_test
 
 import (
 	"context"
-	grafanajson "github.com/clambin/grafana-json"
+	"github.com/clambin/simplejson"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"net"
@@ -12,7 +12,7 @@ import (
 )
 
 func TestMultiHandler(t *testing.T) {
-	s := grafanajson.Server{Handlers: []grafanajson.Handler{
+	s := simplejson.Server{Handlers: []simplejson.Handler{
 		&Handler1{},
 		&Handler2{},
 	}}
@@ -68,8 +68,8 @@ func TestMultiHandler(t *testing.T) {
 type Handler1 struct {
 }
 
-func (h1 *Handler1) Endpoints() grafanajson.Endpoints {
-	return grafanajson.Endpoints{
+func (h1 *Handler1) Endpoints() simplejson.Endpoints {
+	return simplejson.Endpoints{
 		Search: h1.Search,
 		Query:  h1.Query,
 	}
@@ -79,10 +79,10 @@ func (h1 *Handler1) Search() []string {
 	return []string{"handler1"}
 }
 
-func (h1 *Handler1) Query(_ context.Context, _ string, _ *grafanajson.TimeSeriesQueryArgs) (response *grafanajson.TimeSeriesResponse, err error) {
-	response = &grafanajson.TimeSeriesResponse{
+func (h1 *Handler1) Query(_ context.Context, _ string, _ *simplejson.TimeSeriesQueryArgs) (response *simplejson.TimeSeriesResponse, err error) {
+	response = &simplejson.TimeSeriesResponse{
 		Target:     "handler1",
-		DataPoints: []grafanajson.DataPoint{},
+		DataPoints: []simplejson.DataPoint{},
 	}
 	return
 }
@@ -90,8 +90,8 @@ func (h1 *Handler1) Query(_ context.Context, _ string, _ *grafanajson.TimeSeries
 type Handler2 struct {
 }
 
-func (h2 *Handler2) Endpoints() grafanajson.Endpoints {
-	return grafanajson.Endpoints{
+func (h2 *Handler2) Endpoints() simplejson.Endpoints {
+	return simplejson.Endpoints{
 		Search:     h2.Search,
 		TableQuery: h2.TableQuery,
 	}
@@ -101,7 +101,7 @@ func (h2 *Handler2) Search() []string {
 	return []string{"handler2"}
 }
 
-func (h2 *Handler2) TableQuery(_ context.Context, _ string, _ *grafanajson.TableQueryArgs) (response *grafanajson.TableQueryResponse, err error) {
-	response = &grafanajson.TableQueryResponse{}
+func (h2 *Handler2) TableQuery(_ context.Context, _ string, _ *simplejson.TableQueryArgs) (response *simplejson.TableQueryResponse, err error) {
+	response = &simplejson.TableQueryResponse{}
 	return
 }
