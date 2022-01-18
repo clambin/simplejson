@@ -1,4 +1,4 @@
-package grafana_json_test
+package simplejson_test
 
 import (
 	"encoding/json"
@@ -19,7 +19,7 @@ func TestReadResponseDataSeries(t *testing.T) {
 
 }]`
 
-	var output []grafana_json.QueryResponse
+	var output []simplejson.TimeSeriesResponse
 
 	if err := json.Unmarshal([]byte(input), &output); assert.Nil(t, err) {
 		if assert.Len(t, output, 1) {
@@ -37,9 +37,9 @@ func TestReadResponseDataSeries(t *testing.T) {
 }
 
 func TestWriteResponseDataSeries(t *testing.T) {
-	in := []grafana_json.QueryResponse{{
+	in := []simplejson.TimeSeriesResponse{{
 		Target: "A",
-		DataPoints: []grafana_json.QueryResponseDataPoint{
+		DataPoints: []simplejson.DataPoint{
 			{Value: 100, Timestamp: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)},
 			{Value: 101, Timestamp: time.Date(2020, 1, 1, 1, 0, 0, 0, time.UTC)},
 			{Value: 102, Timestamp: time.Date(2020, 1, 1, 2, 0, 0, 0, time.UTC)},
@@ -58,12 +58,12 @@ func TestWriteResponseDataSeries(t *testing.T) {
 func TestWriteResponseTable(t *testing.T) {
 	testDate := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
 
-	in := []grafana_json.TableQueryResponse{{
-		Columns: []grafana_json.TableQueryResponseColumn{
-			{Text: "Time", Data: grafana_json.TableQueryResponseTimeColumn{testDate, testDate}},
-			{Text: "Label", Data: grafana_json.TableQueryResponseStringColumn{"foo", "bar"}},
-			{Text: "Series A", Data: grafana_json.TableQueryResponseNumberColumn{42, 43}},
-			{Text: "Series B", Data: grafana_json.TableQueryResponseNumberColumn{64.5, 100.0}},
+	in := []simplejson.TableQueryResponse{{
+		Columns: []simplejson.TableQueryResponseColumn{
+			{Text: "Time", Data: simplejson.TableQueryResponseTimeColumn{testDate, testDate}},
+			{Text: "Label", Data: simplejson.TableQueryResponseStringColumn{"foo", "bar"}},
+			{Text: "Series A", Data: simplejson.TableQueryResponseNumberColumn{42, 43}},
+			{Text: "Series B", Data: simplejson.TableQueryResponseNumberColumn{64.5, 100.0}},
 		},
 	}}
 
@@ -79,12 +79,12 @@ func TestWriteResponseTable(t *testing.T) {
 func TestWriteBadResponseTable(t *testing.T) {
 	testDate := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
 
-	in := []grafana_json.TableQueryResponse{{
-		Columns: []grafana_json.TableQueryResponseColumn{
-			{Text: "Time", Data: grafana_json.TableQueryResponseTimeColumn{testDate, testDate}},
-			{Text: "Label", Data: grafana_json.TableQueryResponseStringColumn{"foo"}},
-			{Text: "Series A", Data: grafana_json.TableQueryResponseNumberColumn{42, 43}},
-			{Text: "Series B", Data: grafana_json.TableQueryResponseNumberColumn{64.5, 100.0, 105.0}},
+	in := []simplejson.TableQueryResponse{{
+		Columns: []simplejson.TableQueryResponseColumn{
+			{Text: "Time", Data: simplejson.TableQueryResponseTimeColumn{testDate, testDate}},
+			{Text: "Label", Data: simplejson.TableQueryResponseStringColumn{"foo"}},
+			{Text: "Series A", Data: simplejson.TableQueryResponseNumberColumn{42, 43}},
+			{Text: "Series B", Data: simplejson.TableQueryResponseNumberColumn{64.5, 100.0, 105.0}},
 		},
 	}}
 
@@ -96,21 +96,21 @@ func TestWriteBadResponseTable(t *testing.T) {
 func TestWriteCombinedResponse(t *testing.T) {
 	testDate := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
 
-	dataseries := []grafana_json.QueryResponse{{
+	dataseries := []simplejson.TimeSeriesResponse{{
 		Target: "A",
-		DataPoints: []grafana_json.QueryResponseDataPoint{
+		DataPoints: []simplejson.DataPoint{
 			{Value: 100, Timestamp: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)},
 			{Value: 101, Timestamp: time.Date(2020, 1, 1, 1, 0, 0, 0, time.UTC)},
 			{Value: 102, Timestamp: time.Date(2020, 1, 1, 2, 0, 0, 0, time.UTC)},
 		},
 	}}
 
-	tables := []grafana_json.TableQueryResponse{{
-		Columns: []grafana_json.TableQueryResponseColumn{
-			{Text: "Time", Data: grafana_json.TableQueryResponseTimeColumn{testDate, testDate}},
-			{Text: "Label", Data: grafana_json.TableQueryResponseStringColumn{"foo", "bar"}},
-			{Text: "Series A", Data: grafana_json.TableQueryResponseNumberColumn{42, 43}},
-			{Text: "Series B", Data: grafana_json.TableQueryResponseNumberColumn{64.5, 100.0}},
+	tables := []simplejson.TableQueryResponse{{
+		Columns: []simplejson.TableQueryResponseColumn{
+			{Text: "Time", Data: simplejson.TableQueryResponseTimeColumn{testDate, testDate}},
+			{Text: "Label", Data: simplejson.TableQueryResponseStringColumn{"foo", "bar"}},
+			{Text: "Series A", Data: simplejson.TableQueryResponseNumberColumn{42, 43}},
+			{Text: "Series B", Data: simplejson.TableQueryResponseNumberColumn{64.5, 100.0}},
 		},
 	}}
 

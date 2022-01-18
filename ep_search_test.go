@@ -1,4 +1,4 @@
-package grafana_json_test
+package simplejson_test
 
 import (
 	"github.com/stretchr/testify/assert"

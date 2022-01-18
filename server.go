@@ -1,4 +1,4 @@
-package grafana_json
+package simplejson
 
 import (
 	"context"
@@ -18,16 +18,10 @@ type Server struct {
 }
 
 // Handler implements the different Grafana SimpleJSON endpoints.  The interface only contains a single Endpoints()  function,
-// so that a handler only has to implement the endpoint functions (query, tablequery, annotations, etc.) that it needs.
+// so that a handler only has to implement the endpoint functions (query, tablequery, annotation, etc.) that it needs.
 type Handler interface {
 	Endpoints() Endpoints
 }
-
-// QueryFunc handles timeseries queries
-type QueryFunc func(ctx context.Context, target string, args *TimeSeriesQueryArgs) (*QueryResponse, error)
-
-// TableQueryFunc handles for table queries
-type TableQueryFunc func(ctx context.Context, target string, args *TableQueryArgs) (*TableQueryResponse, error)
 
 // TagKeysFunc returns supported tag names
 type TagKeysFunc func(ctx context.Context) []string
@@ -35,17 +29,17 @@ type TagKeysFunc func(ctx context.Context) []string
 // TagValuesFunc returns supported values for the specified tag name
 type TagValuesFunc func(ctx context.Context, key string) ([]string, error)
 
-// AnnotationsFunc handles requests for annotations
-type AnnotationsFunc func(name, query string, args *AnnotationRequestArgs) ([]Annotation, error)
+// AnnotationsFunc handles requests for annotation
+type AnnotationsFunc func(name, query string, args *RequestArgs) ([]Annotation, error)
 
 // Endpoints contains the functions that implement each of the SimpleJson endpoints
 type Endpoints struct {
-	Search      func() []string // /search endpoint: it returns the list of supported targets
-	Query       QueryFunc       // /query endpoint: handles timeSeries queries
-	TableQuery  TableQueryFunc  // /query endpoint: handles table queries
-	Annotations AnnotationsFunc // /annotations endpoint: handles requests for annotations
-	TagKeys     TagKeysFunc     // /tag-keys endpoint: returns all supported tag names
-	TagValues   TagValuesFunc   // /tag-values endpoint: returns all supported values for the specified tag name
+	Search      func() []string     // /search endpoint: it returns the list of supported targets
+	Query       TimeSeriesQueryFunc // /query endpoint: handles timeSeries queries
+	TableQuery  TableQueryFunc      // /query endpoint: handles table queries
+	Annotations AnnotationsFunc     // /annotation endpoint: handles requests for annotation
+	TagKeys     TagKeysFunc         // /tag-keys endpoint: returns all supported tag names
+	TagValues   TagValuesFunc       // /tag-values endpoint: returns all supported values for the specified tag name
 }
 
 // Run starts the SimpleJSon Server.
@@ -75,7 +69,7 @@ func (server *Server) GetRouter() (r *mux.Router) {
 	})
 	r.HandleFunc("/search", server.search).Methods(http.MethodPost)
 	r.HandleFunc("/query", server.query).Methods(http.MethodPost)
-	r.HandleFunc("/annotations", server.annotations).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/annotation", server.annotations).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/tag-keys", server.tagKeys).Methods(http.MethodPost)
 	r.HandleFunc("/tag-values", server.tagValues).Methods(http.MethodPost)
 	return

@@ -1,4 +1,4 @@
-package grafana_json_test
+package simplejson_test
 
 import (
 	"context"
@@ -79,10 +79,10 @@ func (h1 *Handler1) Search() []string {
 	return []string{"handler1"}
 }
 
-func (h1 *Handler1) Query(_ context.Context, _ string, _ *grafanajson.TimeSeriesQueryArgs) (response *grafanajson.QueryResponse, err error) {
-	response = &grafanajson.QueryResponse{
+func (h1 *Handler1) Query(_ context.Context, _ string, _ *grafanajson.TimeSeriesQueryArgs) (response *grafanajson.TimeSeriesResponse, err error) {
+	response = &grafanajson.TimeSeriesResponse{
 		Target:     "handler1",
-		DataPoints: []grafanajson.QueryResponseDataPoint{},
+		DataPoints: []grafanajson.DataPoint{},
 	}
 	return
 }

@@ -1,4 +1,4 @@
-package grafana_json
+package simplejson
 
 import (
 	"context"
@@ -6,10 +6,10 @@ import (
 	"sort"
 )
 
-// TargetTable maps a target to a set of timeseries and table queuries. This can be useful if a Handler supports multiple targets,
+// TargetTable maps a target to a set of timeseries and table queries. This can be useful if a Handler supports multiple targets,
 // and each target requires its own timeseries and/or table query function.
 type TargetTable map[string]struct {
-	QueryFunc      QueryFunc
+	QueryFunc      TimeSeriesQueryFunc
 	TableQueryFunc TableQueryFunc
 }
 
@@ -26,7 +26,7 @@ func (tt TargetTable) Targets() (targets []string) {
 
 // RunQuery runs a timeseries query against a TargetTable.  It looks up the target in the TargetTable and runs that
 // timeseries query. If the target doesn't exist, or doesn't have a timeseries query, it returns an error.
-func (tt TargetTable) RunQuery(ctx context.Context, target string, args *TimeSeriesQueryArgs) (response *QueryResponse, err error) {
+func (tt TargetTable) RunQuery(ctx context.Context, target string, args *TimeSeriesQueryArgs) (response *TimeSeriesResponse, err error) {
 	builder, ok := tt[target]
 
 	if ok == false || builder.QueryFunc == nil {

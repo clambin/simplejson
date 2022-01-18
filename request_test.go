@@ -1,4 +1,4 @@
-package grafana_json_test
+package simplejson_test
 
 import (
 	"encoding/json"
@@ -22,7 +22,7 @@ func TestRequests(t *testing.T) {
 	]
 }`
 
-	var output grafana_json.QueryRequest
+	var output simplejson.TimeSeriesRequest
 
 	if err := json.Unmarshal([]byte(input), &output); assert.Nil(t, err) {
 		assert.Equal(t, uint64(100), output.MaxDataPoints)

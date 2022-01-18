@@ -1,52 +1,32 @@
-package grafana_json
+package simplejson
 
 import (
-	"time"
+	"context"
 )
 
-// QueryRequest is a Query request. For each specified QueryRequestTarget, the server will call the Query endpoint
+// TimeSeriesRequest is a Query request. For each specified RequestTarget, the server will call the Query endpoint
 // with the provided TimeSeriesQueryArgs.
-type QueryRequest struct {
-	Targets []QueryRequestTarget `json:"targets"`
+type TimeSeriesRequest struct {
+	Targets []RequestTarget `json:"targets"`
 	TimeSeriesQueryArgs
-}
-
-// CommonQueryArgs contains common arguments used by endpoints.
-type CommonQueryArgs struct {
-	Range        QueryRequestRange `json:"range"`
-	AdHocFilters []AdHocFilter
 }
 
 // TimeSeriesQueryArgs contains the arguments for a Query.
 type TimeSeriesQueryArgs struct {
-	CommonQueryArgs
+	Args
 	// Interval      QueryRequestDuration `json:"interval"`
 	MaxDataPoints uint64 `json:"maxDataPoints"`
 }
 
 // TableQueryArgs contains the arguments for a TableQuery.
 type TableQueryArgs struct {
-	CommonQueryArgs
+	Args
 }
 
-// QueryRequestRange specified a start and end time for the data to be returned.
-type QueryRequestRange struct {
-	From time.Time `json:"from"`
-	To   time.Time `json:"to"`
-}
-
-// QueryRequestTarget specifies the requested target name and type.
-type QueryRequestTarget struct {
+// RequestTarget specifies the requested target name and type.
+type RequestTarget struct {
 	Target string `json:"target"` // name of the target.
 	Type   string `json:"type"`   // "timeserie" or "" for timeseries. "table" for table queries.
-}
-
-// AdHocFilter specifies the ad hoc filters, whose keys & values are returned by the /tag-key and /tag-values endpoints.
-type AdHocFilter struct {
-	Value     string `json:"value"`
-	Operator  string `json:"operator"`
-	Condition string `json:"condition"`
-	Key       string `json:"key"`
 }
 
 // type QueryRequestDuration time.Duration
@@ -69,21 +49,8 @@ func (d *QueryRequestDuration) UnmarshalJSON(input []byte) (err error) {
 }
 */
 
-// AnnotationRequest is a request for annotations.
-type AnnotationRequest struct {
-	AnnotationRequestArgs
-	Annotation AnnotationRequestDetails `json:"annotation"`
-}
+// TimeSeriesQueryFunc handles timeseries queries
+type TimeSeriesQueryFunc func(ctx context.Context, target string, args *TimeSeriesQueryArgs) (*TimeSeriesResponse, error)
 
-// AnnotationRequestArgs contains arguments for the Annotations endpoint.
-type AnnotationRequestArgs struct {
-	CommonQueryArgs
-}
-
-// AnnotationRequestDetails specifies which annotations should be returned.
-type AnnotationRequestDetails struct {
-	Name       string `json:"name"`
-	Datasource string `json:"datasource"`
-	Enable     bool   `json:"enable"`
-	Query      string `json:"query"`
-}
+// TableQueryFunc handles for table queries
+type TableQueryFunc func(ctx context.Context, target string, args *TableQueryArgs) (*TableQueryResponse, error)

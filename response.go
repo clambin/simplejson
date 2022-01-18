@@ -1,4 +1,4 @@
-package grafana_json
+package simplejson
 
 import (
 	"encoding/json"
@@ -6,30 +6,30 @@ import (
 	"time"
 )
 
-// QueryResponse is returned by a Query.
-type QueryResponse struct {
-	Target     string                   `json:"target"`     // name of the target
-	DataPoints []QueryResponseDataPoint `json:"datapoints"` // values for the target
+// TimeSeriesResponse is returned by a Query.
+type TimeSeriesResponse struct {
+	Target     string      `json:"target"`     // name of the target
+	DataPoints []DataPoint `json:"datapoints"` // values for the target
 }
 
-// QueryResponseDataPoint contains one entry returned by a Query.
-type QueryResponseDataPoint struct {
+// DataPoint contains one entry returned by a Query.
+type DataPoint struct {
 	Timestamp time.Time
 	Value     int64
 }
 
-// MarshalJSON converts a QueryResponseDataPoint to JSON.
-func (d *QueryResponseDataPoint) MarshalJSON() ([]byte, error) {
+// MarshalJSON converts a DataPoint to JSON.
+func (d *DataPoint) MarshalJSON() ([]byte, error) {
 	out := []int64{d.Value, d.Timestamp.UnixNano() / 1000000}
 	return json.Marshal(out)
 }
 
-// UnmarshalJSON converts a JSON structure to a QueryResponseDataPoint.
-func (d *QueryResponseDataPoint) UnmarshalJSON(input []byte) (err error) {
+// UnmarshalJSON converts a JSON structure to a DataPoint.
+func (d *DataPoint) UnmarshalJSON(input []byte) (err error) {
 	var in []int64
 
 	if err = json.Unmarshal(input, &in); err == nil {
-		*d = QueryResponseDataPoint{
+		*d = DataPoint{
 			Value:     in[0],
 			Timestamp: time.Unix(0, in[1]*1000000),
 		}
@@ -153,33 +153,4 @@ func (table *TableQueryResponse) buildRows(rowCount int) (rows []tableResponseRo
 
 	}
 	return
-}
-
-// Annotation response. The annotation endpoint returns a slice of these.
-type Annotation struct {
-	Time    time.Time
-	Title   string
-	Text    string
-	Tags    []string
-	request AnnotationRequestDetails
-}
-
-// MarshalJSON converts an Annotation to JSON.
-func (annotation *Annotation) MarshalJSON() (output []byte, err error) {
-	// must be an easier way than this?
-	jsonResponse := struct {
-		Request AnnotationRequestDetails `json:"annotation"`
-		Time    int64                    `json:"time"`
-		Title   string                   `json:"title"`
-		Text    string                   `json:"text"`
-		Tags    []string                 `json:"tags"`
-	}{
-		Request: annotation.request,
-		Time:    annotation.Time.UnixNano() / 1000000,
-		Title:   annotation.Title,
-		Text:    annotation.Text,
-		Tags:    annotation.Tags,
-	}
-
-	return json.Marshal(jsonResponse)
 }

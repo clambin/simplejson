@@ -1,4 +1,4 @@
-package grafana_json_test
+package simplejson_test
 
 import (
 	"bytes"
@@ -18,8 +18,8 @@ import (
 var Port int
 
 func TestMain(m *testing.M) {
-	s := grafana_json.Server{
-		Handlers: []grafana_json.Handler{createHandler()},
+	s := simplejson.Server{
+		Handlers: []simplejson.Handler{createHandler()},
 	}
 
 	listener, err := net.Listen("tcp4", ":0")
@@ -90,19 +90,25 @@ func call(port int, path, method, body string) (response string, err error) {
 	req, _ := http.NewRequest(method, url, reqBody)
 
 	var resp *http.Response
-	if resp, err = client.Do(req); err == nil {
-		defer func() {
-			_ = resp.Body.Close()
-		}()
-		var buff []byte
-		if resp.StatusCode == http.StatusOK {
-			if buff, err = io.ReadAll(resp.Body); err == nil {
-				response = string(buff)
-			}
-		} else {
-			err = errors.New(resp.Status)
-		}
+	resp, err = client.Do(req)
+
+	if err != nil {
+		return
 	}
+
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", errors.New(resp.Status)
+	}
+
+	var buff []byte
+	if buff, err = io.ReadAll(resp.Body); err == nil {
+		response = string(buff)
+	}
+
 	return
 }
 
@@ -114,19 +120,19 @@ func call(port int, path, method, body string) (response string, err error) {
 type testAPIHandler struct {
 	noEndpoints bool
 
-	queryResponses      map[string]*grafana_json.QueryResponse
-	tableQueryResponses map[string]*grafana_json.TableQueryResponse
-	annotations         []grafana_json.Annotation
+	queryResponses      map[string]*simplejson.TimeSeriesResponse
+	tableQueryResponses map[string]*simplejson.TableQueryResponse
+	annotations         []simplejson.Annotation
 	tags                []string
 	tagValues           map[string][]string
 }
 
 func createHandler() (handler *testAPIHandler) {
 	return &testAPIHandler{
-		queryResponses: map[string]*grafana_json.QueryResponse{
+		queryResponses: map[string]*simplejson.TimeSeriesResponse{
 			"A": {
 				Target: "A",
-				DataPoints: []grafana_json.QueryResponseDataPoint{
+				DataPoints: []simplejson.DataPoint{
 					{Timestamp: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC), Value: 100},
 					{Timestamp: time.Date(2020, 1, 1, 0, 1, 0, 0, time.UTC), Value: 101},
 					{Timestamp: time.Date(2020, 1, 1, 0, 2, 0, 0, time.UTC), Value: 103},
@@ -134,27 +140,27 @@ func createHandler() (handler *testAPIHandler) {
 			},
 			"B": {
 				Target: "B",
-				DataPoints: []grafana_json.QueryResponseDataPoint{
+				DataPoints: []simplejson.DataPoint{
 					{Timestamp: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC), Value: 100},
 					{Timestamp: time.Date(2020, 1, 1, 0, 1, 0, 0, time.UTC), Value: 99},
 					{Timestamp: time.Date(2020, 1, 1, 0, 2, 0, 0, time.UTC), Value: 98},
 				},
 			},
 		},
-		tableQueryResponses: map[string]*grafana_json.TableQueryResponse{
+		tableQueryResponses: map[string]*simplejson.TableQueryResponse{
 			"C": {
-				Columns: []grafana_json.TableQueryResponseColumn{
-					{Text: "Time", Data: grafana_json.TableQueryResponseTimeColumn{
+				Columns: []simplejson.TableQueryResponseColumn{
+					{Text: "Time", Data: simplejson.TableQueryResponseTimeColumn{
 						time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
 						time.Date(2020, 1, 1, 0, 1, 0, 0, time.UTC),
 					}},
-					{Text: "Label", Data: grafana_json.TableQueryResponseStringColumn{"foo", "bar"}},
-					{Text: "Series A", Data: grafana_json.TableQueryResponseNumberColumn{42, 43}},
-					{Text: "Series B", Data: grafana_json.TableQueryResponseNumberColumn{64.5, 100.0}},
+					{Text: "Label", Data: simplejson.TableQueryResponseStringColumn{"foo", "bar"}},
+					{Text: "Series A", Data: simplejson.TableQueryResponseNumberColumn{42, 43}},
+					{Text: "Series B", Data: simplejson.TableQueryResponseNumberColumn{64.5, 100.0}},
 				},
 			},
 		},
-		annotations: []grafana_json.Annotation{{
+		annotations: []simplejson.Annotation{{
 			Time:  time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
 			Title: "foo",
 			Text:  "bar",
@@ -168,11 +174,11 @@ func createHandler() (handler *testAPIHandler) {
 	}
 }
 
-func (handler *testAPIHandler) Endpoints() grafana_json.Endpoints {
+func (handler *testAPIHandler) Endpoints() simplejson.Endpoints {
 	if handler.noEndpoints {
-		return grafana_json.Endpoints{}
+		return simplejson.Endpoints{}
 	}
-	return grafana_json.Endpoints{
+	return simplejson.Endpoints{
 		Search:      handler.Search,
 		Query:       handler.Query,
 		TableQuery:  handler.TableQuery,
@@ -186,7 +192,7 @@ func (handler *testAPIHandler) Search() []string {
 	return []string{"A", "B", "C", "Crash"}
 }
 
-func (handler *testAPIHandler) Query(_ context.Context, target string, _ *grafana_json.TimeSeriesQueryArgs) (response *grafana_json.QueryResponse, err error) {
+func (handler *testAPIHandler) Query(_ context.Context, target string, _ *simplejson.TimeSeriesQueryArgs) (response *simplejson.TimeSeriesResponse, err error) {
 	if target == "Crash" {
 		err = fmt.Errorf("server crash")
 	} else {
@@ -198,7 +204,7 @@ func (handler *testAPIHandler) Query(_ context.Context, target string, _ *grafan
 	return
 }
 
-func (handler *testAPIHandler) TableQuery(_ context.Context, target string, _ *grafana_json.TableQueryArgs) (response *grafana_json.TableQueryResponse, err error) {
+func (handler *testAPIHandler) TableQuery(_ context.Context, target string, _ *simplejson.TableQueryArgs) (response *simplejson.TableQueryResponse, err error) {
 	if target == "Crash" {
 		err = fmt.Errorf("server crash")
 	} else {
@@ -210,7 +216,7 @@ func (handler *testAPIHandler) TableQuery(_ context.Context, target string, _ *g
 	return
 }
 
-func (handler *testAPIHandler) Annotations(_, _ string, _ *grafana_json.AnnotationRequestArgs) (annotations []grafana_json.Annotation, err error) {
+func (handler *testAPIHandler) Annotations(_, _ string, _ *simplejson.RequestArgs) (annotations []simplejson.Annotation, err error) {
 	for _, ann := range handler.annotations {
 		annotations = append(annotations, ann)
 	}

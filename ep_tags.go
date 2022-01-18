@@ -1,4 +1,4 @@
-package grafana_json
+package simplejson
 
 import (
 	"encoding/json"

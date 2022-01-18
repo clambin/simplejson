@@ -1,4 +1,4 @@
-package grafana_json
+package simplejson
 
 import (
 	"context"
@@ -29,7 +29,7 @@ func (server *Server) query(w http.ResponseWriter, req *http.Request) {
 
 	bytes, err := io.ReadAll(req.Body)
 
-	var request QueryRequest
+	var request TimeSeriesRequest
 	if err == nil {
 		err = json.Unmarshal(bytes, &request)
 	}
@@ -45,7 +45,7 @@ func (server *Server) query(w http.ResponseWriter, req *http.Request) {
 		start := time.Now()
 		switch target.Type {
 		case "timeserie", "":
-			var response *QueryResponse
+			var response *TimeSeriesResponse
 			if response, err = server.handleQueryRequest(req.Context(), target.Target, &request); err == nil {
 				responses = append(responses, response)
 			}
@@ -57,7 +57,7 @@ func (server *Server) query(w http.ResponseWriter, req *http.Request) {
 		}
 		queryDuration.WithLabelValues(server.Name, target.Type, target.Target).Observe(time.Now().Sub(start).Seconds())
 		if err != nil {
-			queryFailure.WithLabelValues(server.Name, target.Target, target.Target).Add(1.0)
+			queryFailure.WithLabelValues(server.Name, target.Type, target.Target).Add(1.0)
 			break
 		}
 	}
@@ -79,7 +79,7 @@ func (server *Server) query(w http.ResponseWriter, req *http.Request) {
 	_, _ = w.Write(output)
 }
 
-func (server *Server) handleQueryRequest(ctx context.Context, target string, request *QueryRequest) (*QueryResponse, error) {
+func (server *Server) handleQueryRequest(ctx context.Context, target string, request *TimeSeriesRequest) (*TimeSeriesResponse, error) {
 	h := server.findHandler(target)
 
 	if h == nil {
@@ -93,8 +93,8 @@ func (server *Server) handleQueryRequest(ctx context.Context, target string, req
 	}
 
 	args := TimeSeriesQueryArgs{
-		CommonQueryArgs: CommonQueryArgs{
-			Range: QueryRequestRange{
+		Args: Args{
+			Range: Range{
 				From: request.Range.From,
 				To:   request.Range.To,
 			},
@@ -106,7 +106,7 @@ func (server *Server) handleQueryRequest(ctx context.Context, target string, req
 	return q(ctx, target, &args)
 }
 
-func (server *Server) handleTableQueryRequest(ctx context.Context, target string, request *QueryRequest) (*TableQueryResponse, error) {
+func (server *Server) handleTableQueryRequest(ctx context.Context, target string, request *TimeSeriesRequest) (*TableQueryResponse, error) {
 	h := server.findHandler(target)
 
 	if h == nil {
@@ -119,8 +119,8 @@ func (server *Server) handleTableQueryRequest(ctx context.Context, target string
 		return nil, errors.New("table query endpoint not implemented")
 	}
 	args := TableQueryArgs{
-		CommonQueryArgs: CommonQueryArgs{
-			Range: QueryRequestRange{
+		Args: Args{
+			Range: Range{
 				From: request.Range.From,
 				To:   request.Range.To,
 			},

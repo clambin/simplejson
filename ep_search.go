@@ -1,18 +1,9 @@
-package grafana_json
+package simplejson
 
 import (
 	"encoding/json"
 	"net/http"
 )
-
-func (server *Server) getTargets() (targets []string) {
-	for _, h := range server.Handlers {
-		if h.Endpoints().Search != nil {
-			targets = append(targets, h.Endpoints().Search()...)
-		}
-	}
-	return
-}
 
 func (server *Server) search(w http.ResponseWriter, _ *http.Request) {
 	targets := server.getTargets()
@@ -24,4 +15,13 @@ func (server *Server) search(w http.ResponseWriter, _ *http.Request) {
 	}
 
 	_, _ = w.Write(output)
+}
+
+func (server *Server) getTargets() (targets []string) {
+	for _, h := range server.Handlers {
+		if h.Endpoints().Search != nil {
+			targets = append(targets, h.Endpoints().Search()...)
+		}
+	}
+	return
 }

@@ -3,14 +3,14 @@ package main
 import (
 	"context"
 	"errors"
-	"github.com/clambin/grafana-json"
+	simplejson "github.com/clambin/grafana-json"
 	log "github.com/sirupsen/logrus"
 	"time"
 )
 
 func main() {
 	h := &handler{}
-	s := grafana_json.Server{Handlers: []grafana_json.Handler{h}}
+	s := simplejson.Server{Handlers: []simplejson.Handler{h}}
 
 	log.SetLevel(log.DebugLevel)
 	_ = s.Run(8088)
@@ -18,8 +18,8 @@ func main() {
 
 type handler struct{}
 
-func (h *handler) Endpoints() grafana_json.Endpoints {
-	return grafana_json.Endpoints{
+func (h *handler) Endpoints() simplejson.Endpoints {
+	return simplejson.Endpoints{
 		Search:      h.Search,
 		Query:       h.Query,
 		TableQuery:  h.TableQuery,
@@ -33,7 +33,7 @@ func (h *handler) Search() []string {
 	return []string{"series", "table"}
 }
 
-func (h *handler) Query(_ context.Context, target string, req *grafana_json.TimeSeriesQueryArgs) (response *grafana_json.QueryResponse, err error) {
+func (h *handler) Query(_ context.Context, target string, req *simplejson.TimeSeriesQueryArgs) (response *simplejson.TimeSeriesResponse, err error) {
 	if target != "series" {
 		err = errors.New("unsupported series")
 		return
@@ -48,12 +48,12 @@ func (h *handler) Query(_ context.Context, target string, req *grafana_json.Time
 		}).Info("table request received")
 	}
 
-	response = new(grafana_json.QueryResponse)
-	response.DataPoints = make([]grafana_json.QueryResponseDataPoint, 60)
+	response = new(simplejson.TimeSeriesResponse)
+	response.DataPoints = make([]simplejson.DataPoint, 60)
 
 	timestamp := time.Now().Add(-1 * time.Hour)
 	for i := 0; i < 60; i++ {
-		response.DataPoints[i] = grafana_json.QueryResponseDataPoint{
+		response.DataPoints[i] = simplejson.DataPoint{
 			Timestamp: timestamp,
 			Value:     int64(i),
 		}
@@ -62,7 +62,7 @@ func (h *handler) Query(_ context.Context, target string, req *grafana_json.Time
 	return
 }
 
-func (h *handler) TableQuery(_ context.Context, target string, req *grafana_json.TableQueryArgs) (response *grafana_json.TableQueryResponse, err error) {
+func (h *handler) TableQuery(_ context.Context, target string, req *simplejson.TableQueryArgs) (response *simplejson.TableQueryResponse, err error) {
 	if target != "table" {
 		err = errors.New("unsupported series")
 		return
@@ -77,9 +77,9 @@ func (h *handler) TableQuery(_ context.Context, target string, req *grafana_json
 		}).Info("table request received")
 	}
 
-	timestamps := make(grafana_json.TableQueryResponseTimeColumn, 60)
-	seriesA := make(grafana_json.TableQueryResponseNumberColumn, 60)
-	seriesB := make(grafana_json.TableQueryResponseNumberColumn, 60)
+	timestamps := make(simplejson.TableQueryResponseTimeColumn, 60)
+	seriesA := make(simplejson.TableQueryResponseNumberColumn, 60)
+	seriesB := make(simplejson.TableQueryResponseNumberColumn, 60)
 
 	timestamp := time.Now().Add(-1 * time.Hour)
 	for i := 0; i < 60; i++ {
@@ -89,8 +89,8 @@ func (h *handler) TableQuery(_ context.Context, target string, req *grafana_json
 		timestamp = timestamp.Add(1 * time.Minute)
 	}
 
-	response = new(grafana_json.TableQueryResponse)
-	response.Columns = []grafana_json.TableQueryResponseColumn{
+	response = new(simplejson.TableQueryResponse)
+	response.Columns = []simplejson.TableQueryResponseColumn{
 		{
 			Text: "timestamp",
 			Data: timestamps,
@@ -107,8 +107,8 @@ func (h *handler) TableQuery(_ context.Context, target string, req *grafana_json
 	return
 }
 
-func (h *handler) Annotations(_, _ string, _ *grafana_json.AnnotationRequestArgs) (annotations []grafana_json.Annotation, err error) {
-	annotations = append(annotations, grafana_json.Annotation{
+func (h *handler) Annotations(_, _ string, _ *simplejson.RequestArgs) (annotations []simplejson.Annotation, err error) {
+	annotations = append(annotations, simplejson.Annotation{
 		Time:  time.Now().Add(-5 * time.Minute),
 		Title: "foo",
 		Text:  "bar",
