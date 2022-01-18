@@ -50,9 +50,8 @@ func TestMain(m *testing.M) {
 
 func BenchmarkAPIServer(b *testing.B) {
 	require.Eventually(b, func() bool {
-		body, err := call(Port, "/", "GET", "")
-		require.NoError(b, err)
-		return assert.Equal(b, "Hello", body)
+		body, err := call(Port, "/", http.MethodPost, "")
+		return err == nil && body == ""
 	}, 500*time.Millisecond, 10*time.Millisecond)
 
 	req := `{
@@ -71,7 +70,7 @@ func BenchmarkAPIServer(b *testing.B) {
 	var err error
 
 	b.ResetTimer()
-	body, err = call(Port, "/query", "POST", req)
+	body, err = call(Port, "/query", http.MethodPost, req)
 
 	require.Nil(b, err)
 	assert.Equal(b, `[{"target":"A","datapoints":[[100,1577836800000],[101,1577836860000],[103,1577836920000]]},{"target":"B","datapoints":[[100,1577836800000],[99,1577836860000],[98,1577836920000]]}]`, body)
@@ -79,11 +78,8 @@ func BenchmarkAPIServer(b *testing.B) {
 
 func serverRunning(t *testing.T) {
 	require.Eventually(t, func() bool {
-		body, err := call(Port, "/", "GET", "")
-		if assert.Nil(t, err) {
-			return assert.Empty(t, body)
-		}
-		return false
+		body, err := call(Port, "/", http.MethodGet, "")
+		return err == nil && body == ""
 	}, 500*time.Millisecond, 10*time.Millisecond)
 }
 

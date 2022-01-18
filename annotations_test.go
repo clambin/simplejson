@@ -3,13 +3,14 @@ package grafana_json_test
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"net/http"
 	"testing"
 )
 
 func TestAPIServer_Annotations(t *testing.T) {
 	serverRunning(t)
 
-	body, err := call(Port, "/annotations", "OPTIONS", "")
+	body, err := call(Port, "/annotations", http.MethodOptions, "")
 
 	require.NoError(t, err)
 	assert.Equal(t, "", body)
@@ -26,7 +27,7 @@ func TestAPIServer_Annotations(t *testing.T) {
 		"query": ""
 	}
 }`
-	body, err = call(Port, "/annotations", "POST", req)
+	body, err = call(Port, "/annotations", http.MethodPost, req)
 
 	require.NoError(t, err)
 	assert.Equal(t, `[{"annotation":{"name":"snafu","datasource":"fubar","enable":true,"query":""},"time":1609459200000,"title":"foo","text":"bar","tags":["snafu"]}]`, body)
