@@ -5,19 +5,19 @@ import (
 	"time"
 )
 
-// Request is a request for annotation.
-type Request struct {
-	RequestArgs
-	Annotation RequestDetails `json:"annotation"`
+// AnnotationRequest is a request for annotation.
+type AnnotationRequest struct {
+	AnnotationRequestArgs
+	Annotation AnnotationRequestDetails `json:"annotation"`
 }
 
-// RequestArgs contains arguments for the Annotations endpoint.
-type RequestArgs struct {
+// AnnotationRequestArgs contains arguments for the Annotations endpoint.
+type AnnotationRequestArgs struct {
 	Args
 }
 
-// RequestDetails specifies which annotation should be returned.
-type RequestDetails struct {
+// AnnotationRequestDetails specifies which annotation should be returned.
+type AnnotationRequestDetails struct {
 	Name       string `json:"name"`
 	Datasource string `json:"datasource"`
 	Enable     bool   `json:"enable"`
@@ -30,18 +30,18 @@ type Annotation struct {
 	Title   string
 	Text    string
 	Tags    []string
-	Request RequestDetails
+	Request AnnotationRequestDetails
 }
 
 // MarshalJSON converts an Annotation to JSON.
 func (annotation *Annotation) MarshalJSON() (output []byte, err error) {
 	// must be an easier way than this?
 	jsonResponse := struct {
-		Request RequestDetails `json:"annotation"`
-		Time    int64          `json:"time"`
-		Title   string         `json:"title"`
-		Text    string         `json:"text"`
-		Tags    []string       `json:"tags"`
+		Request AnnotationRequestDetails `json:"annotation"`
+		Time    int64                    `json:"time"`
+		Title   string                   `json:"title"`
+		Text    string                   `json:"text"`
+		Tags    []string                 `json:"tags"`
 	}{
 		Request: annotation.Request,
 		Time:    annotation.Time.UnixNano() / 1000000,

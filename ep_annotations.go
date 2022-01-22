@@ -13,9 +13,9 @@ func (server *Server) annotations(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	var request Request
+	var request AnnotationRequest
 	handleEndpoint(w, req, &request, func() (response interface{}, err error) {
-		args := RequestArgs{
+		args := AnnotationRequestArgs{
 			Args: Args{
 				Range: request.Range,
 			},
@@ -33,11 +33,13 @@ func (server *Server) annotations(w http.ResponseWriter, req *http.Request) {
 				return
 			}
 
-			for _, a := range newAnnotations {
-				a.Request = request.Annotation
-				annotations = append(annotations, a)
-			}
+			annotations = append(annotations, newAnnotations...)
 		}
+
+		for index := range annotations {
+			annotations[index].Request = request.Annotation
+		}
+
 		return annotations, nil
 	})
 }

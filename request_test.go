@@ -23,7 +23,7 @@ func TestRequests(t *testing.T) {
 	]
 }`
 
-	var output simplejson.TimeSeriesRequest
+	var output simplejson.QueryRequest
 
 	err := json.Unmarshal([]byte(input), &output)
 	require.NoError(t, err)

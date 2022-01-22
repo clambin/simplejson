@@ -19,8 +19,7 @@ var Port int
 
 func TestMain(m *testing.M) {
 	s := simplejson.Server{
-		Handlers: []simplejson.Handler{createHandler()},
-	}
+		Handlers: handlers}
 
 	listener, err := net.Listen("tcp4", ":0")
 	if err != nil {
@@ -48,6 +47,16 @@ func TestMain(m *testing.M) {
 	cancel()
 }
 
+func TestServer_Metrics(t *testing.T) {
+	serverRunning(t)
+
+	body, err := call(Port, "/metrics", http.MethodGet, "")
+	require.NoError(t, err)
+	assert.Contains(t, body, "http_duration_seconds")
+	assert.Contains(t, body, "http_duration_seconds_sum")
+	assert.Contains(t, body, "http_duration_seconds_count")
+}
+
 func BenchmarkAPIServer(b *testing.B) {
 	require.Eventually(b, func() bool {
 		body, err := call(Port, "/", http.MethodPost, "")
@@ -66,14 +75,13 @@ func BenchmarkAPIServer(b *testing.B) {
 		{ "target": "B" }
 	]
 }`
-	var body string
-	var err error
-
 	b.ResetTimer()
-	body, err = call(Port, "/query", http.MethodPost, req)
-
-	require.NoError(b, err)
-	assert.Equal(b, `[{"target":"A","datapoints":[[100,1577836800000],[101,1577836860000],[103,1577836920000]]},{"target":"B","datapoints":[[100,1577836800000],[99,1577836860000],[98,1577836920000]]}]`, body)
+	for i := 0; i < b.N; i++ {
+		_, err := call(Port, "/query", http.MethodPost, req)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
 }
 
 func serverRunning(t *testing.T) {
@@ -120,107 +128,111 @@ func call(port int, path, method, body string) (response string, err error) {
 type testAPIHandler struct {
 	noEndpoints bool
 
-	queryResponses      map[string]*simplejson.TimeSeriesResponse
-	tableQueryResponses map[string]*simplejson.TableQueryResponse
-	annotations         []simplejson.Annotation
-	tags                []string
-	tagValues           map[string][]string
+	queryResponse      *simplejson.TimeSeriesResponse
+	tableQueryResponse *simplejson.TableQueryResponse
+	annotations        []simplejson.Annotation
+	tags               []string
+	tagValues          map[string][]string
 }
 
-func createHandler() (handler *testAPIHandler) {
-	return &testAPIHandler{
-		queryResponses: map[string]*simplejson.TimeSeriesResponse{
-			"A": {
-				Target: "A",
-				DataPoints: []simplejson.DataPoint{
-					{Timestamp: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC), Value: 100},
-					{Timestamp: time.Date(2020, 1, 1, 0, 1, 0, 0, time.UTC), Value: 101},
-					{Timestamp: time.Date(2020, 1, 1, 0, 2, 0, 0, time.UTC), Value: 103},
-				},
-			},
-			"B": {
-				Target: "B",
-				DataPoints: []simplejson.DataPoint{
-					{Timestamp: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC), Value: 100},
-					{Timestamp: time.Date(2020, 1, 1, 0, 1, 0, 0, time.UTC), Value: 99},
-					{Timestamp: time.Date(2020, 1, 1, 0, 2, 0, 0, time.UTC), Value: 98},
-				},
+var _ simplejson.Handler = &testAPIHandler{}
+
+var (
+	queryResponses = map[string]*simplejson.TimeSeriesResponse{
+		"A": {
+			Target: "A",
+			DataPoints: []simplejson.DataPoint{
+				{Timestamp: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC), Value: 100},
+				{Timestamp: time.Date(2020, 1, 1, 0, 1, 0, 0, time.UTC), Value: 101},
+				{Timestamp: time.Date(2020, 1, 1, 0, 2, 0, 0, time.UTC), Value: 103},
 			},
 		},
-		tableQueryResponses: map[string]*simplejson.TableQueryResponse{
-			"C": {
-				Columns: []simplejson.TableQueryResponseColumn{
-					{Text: "Time", Data: simplejson.TableQueryResponseTimeColumn{
-						time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
-						time.Date(2020, 1, 1, 0, 1, 0, 0, time.UTC),
-					}},
-					{Text: "Label", Data: simplejson.TableQueryResponseStringColumn{"foo", "bar"}},
-					{Text: "Series A", Data: simplejson.TableQueryResponseNumberColumn{42, 43}},
-					{Text: "Series B", Data: simplejson.TableQueryResponseNumberColumn{64.5, 100.0}},
-				},
+		"B": {
+			Target: "B",
+			DataPoints: []simplejson.DataPoint{
+				{Timestamp: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC), Value: 100},
+				{Timestamp: time.Date(2020, 1, 1, 0, 1, 0, 0, time.UTC), Value: 99},
+				{Timestamp: time.Date(2020, 1, 1, 0, 2, 0, 0, time.UTC), Value: 98},
 			},
-		},
-		annotations: []simplejson.Annotation{{
-			Time:  time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
-			Title: "foo",
-			Text:  "bar",
-			Tags:  []string{"snafu"},
-		}},
-		tags: []string{"foo", "bar"},
-		tagValues: map[string][]string{
-			"foo": {"A", "B"},
-			"bar": {"1", "2"},
 		},
 	}
-}
 
-func (handler *testAPIHandler) Endpoints() simplejson.Endpoints {
+	tableQueryResponse = map[string]*simplejson.TableQueryResponse{
+		"C": {
+			Columns: []simplejson.TableQueryResponseColumn{
+				{Text: "Time", Data: simplejson.TableQueryResponseTimeColumn{
+					time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
+					time.Date(2020, 1, 1, 0, 1, 0, 0, time.UTC),
+				}},
+				{Text: "Label", Data: simplejson.TableQueryResponseStringColumn{"foo", "bar"}},
+				{Text: "Series A", Data: simplejson.TableQueryResponseNumberColumn{42, 43}},
+				{Text: "Series B", Data: simplejson.TableQueryResponseNumberColumn{64.5, 100.0}},
+			},
+		},
+	}
+
+	annotations = []simplejson.Annotation{{
+		Time:  time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
+		Title: "foo",
+		Text:  "bar",
+		Tags:  []string{"snafu"},
+	}}
+
+	tags = []string{"foo", "bar"}
+
+	tagValues = map[string][]string{
+		"foo": {"A", "B"},
+		"bar": {"1", "2"},
+	}
+
+	handlers = map[string]simplejson.Handler{
+		"A": &testAPIHandler{
+			queryResponse: queryResponses["A"],
+			annotations:   annotations,
+			tags:          tags,
+			tagValues:     tagValues,
+		},
+		"B": &testAPIHandler{
+			queryResponse: queryResponses["B"],
+		},
+		"C": &testAPIHandler{
+			tableQueryResponse: tableQueryResponse["C"],
+		},
+	}
+)
+
+func (handler *testAPIHandler) Endpoints() (endpoints simplejson.Endpoints) {
 	if handler.noEndpoints {
-		return simplejson.Endpoints{}
+		return
 	}
-	return simplejson.Endpoints{
-		Search:      handler.Search,
-		Query:       handler.Query,
-		TableQuery:  handler.TableQuery,
-		Annotations: handler.Annotations,
-		TagKeys:     handler.Tags,
-		TagValues:   handler.TagValues,
+	if handler.queryResponse != nil {
+		endpoints.Query = handler.Query
 	}
-}
-
-func (handler *testAPIHandler) Search() []string {
-	return []string{"A", "B", "C", "Crash"}
-}
-
-func (handler *testAPIHandler) Query(_ context.Context, target string, _ *simplejson.TimeSeriesQueryArgs) (response *simplejson.TimeSeriesResponse, err error) {
-	if target == "Crash" {
-		err = fmt.Errorf("server crash")
-	} else {
-		var ok bool
-		if response, ok = handler.queryResponses[target]; ok == false {
-			err = fmt.Errorf("not implemented: %s", target)
-		}
+	if handler.tableQueryResponse != nil {
+		endpoints.TableQuery = handler.TableQuery
+	}
+	if len(handler.annotations) > 0 {
+		endpoints.Annotations = handler.Annotations
+	}
+	if len(handler.tags) > 0 {
+		endpoints.TagKeys = handler.Tags
+	}
+	if len(handler.tagValues) > 0 {
+		endpoints.TagValues = handler.TagValues
 	}
 	return
 }
 
-func (handler *testAPIHandler) TableQuery(_ context.Context, target string, _ *simplejson.TableQueryArgs) (response *simplejson.TableQueryResponse, err error) {
-	if target == "Crash" {
-		err = fmt.Errorf("server crash")
-	} else {
-		var ok bool
-		if response, ok = handler.tableQueryResponses[target]; ok == false {
-			err = fmt.Errorf("not implemented: %s", target)
-		}
-	}
-	return
+func (handler *testAPIHandler) Query(_ context.Context, _ *simplejson.TimeSeriesQueryArgs) (response *simplejson.TimeSeriesResponse, err error) {
+	return handler.queryResponse, nil
 }
 
-func (handler *testAPIHandler) Annotations(_, _ string, _ *simplejson.RequestArgs) (annotations []simplejson.Annotation, err error) {
-	for _, ann := range handler.annotations {
-		annotations = append(annotations, ann)
-	}
-	return
+func (handler *testAPIHandler) TableQuery(_ context.Context, _ *simplejson.TableQueryArgs) (response *simplejson.TableQueryResponse, err error) {
+	return handler.tableQueryResponse, nil
+}
+
+func (handler *testAPIHandler) Annotations(_, _ string, _ *simplejson.AnnotationRequestArgs) (annotations []simplejson.Annotation, err error) {
+	return handler.annotations, nil
 }
 
 func (handler *testAPIHandler) Tags(_ context.Context) (tags []string) {

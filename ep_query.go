@@ -21,7 +21,8 @@ var queryFailure = promauto.NewCounterVec(prometheus.CounterOpts{
 }, []string{"app", "type", "target"})
 
 func (server *Server) query(w http.ResponseWriter, req *http.Request) {
-	var request TimeSeriesRequest
+	// fixme: table query uses TableQueryRequest
+	var request QueryRequest
 	handleEndpoint(w, req, &request, func() (interface{}, error) {
 		var err error
 		responses := make([]interface{}, 0, len(request.Targets))
@@ -49,69 +50,36 @@ func (server *Server) query(w http.ResponseWriter, req *http.Request) {
 	})
 }
 
-func (server *Server) handleQueryRequest(ctx context.Context, target string, request *TimeSeriesRequest) (*TimeSeriesResponse, error) {
-	h := server.findHandler(target)
+func (server *Server) handleQueryRequest(ctx context.Context, target string, request *QueryRequest) (*TimeSeriesResponse, error) {
+	handler, ok := server.Handlers[target]
 
-	if h == nil {
+	if ok == false {
 		return nil, fmt.Errorf("no handler found for target '%s'", target)
 	}
 
-	q := h.Endpoints().Query
+	q := handler.Endpoints().Query
 
 	if q == nil {
 		return nil, errors.New("query endpoint not implemented")
 	}
 
-	args := TimeSeriesQueryArgs{
-		Args: Args{
-			Range: Range{
-				From: request.Range.From,
-				To:   request.Range.To,
-			},
-			AdHocFilters: request.AdHocFilters,
-		},
-		MaxDataPoints: request.MaxDataPoints,
-	}
-
-	return q(ctx, target, &args)
+	return q(ctx, &request.TimeSeriesQueryArgs)
 }
 
-func (server *Server) handleTableQueryRequest(ctx context.Context, target string, request *TimeSeriesRequest) (*TableQueryResponse, error) {
-	h := server.findHandler(target)
+func (server *Server) handleTableQueryRequest(ctx context.Context, target string, request *QueryRequest) (*TableQueryResponse, error) {
+	handler, ok := server.Handlers[target]
 
-	if h == nil {
+	if ok == false {
 		return nil, fmt.Errorf("no handler found for target '%s'", target)
 	}
 
-	q := h.Endpoints().TableQuery
+	q := handler.Endpoints().TableQuery
 
 	if q == nil {
 		return nil, errors.New("table query endpoint not implemented")
 	}
-	args := TableQueryArgs{
-		Args: Args{
-			Range: Range{
-				From: request.Range.From,
-				To:   request.Range.To,
-			},
-			AdHocFilters: request.AdHocFilters,
-		},
-	}
-	return q(ctx, target, &args)
-}
 
-func (server *Server) findHandler(target string) Handler {
-	for _, h := range server.Handlers {
-		if h.Endpoints().Search == nil {
-			continue
-		}
+	args := &TableQueryArgs{Args: request.Args}
 
-		for _, t := range h.Endpoints().Search() {
-			if t == target {
-				return h
-			}
-		}
-	}
-
-	return nil
+	return q(ctx, args)
 }

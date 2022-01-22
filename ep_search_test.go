@@ -12,5 +12,5 @@ func TestSearch(t *testing.T) {
 
 	body, err := call(Port, "/search", http.MethodPost, "")
 	require.NoError(t, err)
-	assert.Equal(t, `["A","B","C","Crash"]`, body)
+	assert.Equal(t, `["A","B","C"]`, body)
 }

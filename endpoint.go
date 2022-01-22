@@ -40,5 +40,4 @@ func handleEndpoint(w http.ResponseWriter, req *http.Request, request interface{
 	}
 
 	_, _ = w.Write(output)
-
 }

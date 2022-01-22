@@ -2,15 +2,15 @@ package main
 
 import (
 	"context"
-	"errors"
 	"github.com/clambin/simplejson"
 	log "github.com/sirupsen/logrus"
 	"time"
 )
 
 func main() {
-	h := &handler{}
-	s := simplejson.Server{Handlers: []simplejson.Handler{h}}
+	s := simplejson.Server{Handlers: map[string]simplejson.Handler{
+		"A": &handler{},
+	}}
 
 	log.SetLevel(log.DebugLevel)
 	_ = s.Run(8088)
@@ -20,7 +20,6 @@ type handler struct{}
 
 func (h *handler) Endpoints() simplejson.Endpoints {
 	return simplejson.Endpoints{
-		Search:      h.Search,
 		Query:       h.Query,
 		TableQuery:  h.TableQuery,
 		Annotations: h.Annotations,
@@ -29,16 +28,7 @@ func (h *handler) Endpoints() simplejson.Endpoints {
 	}
 }
 
-func (h *handler) Search() []string {
-	return []string{"series", "table"}
-}
-
-func (h *handler) Query(_ context.Context, target string, req *simplejson.TimeSeriesQueryArgs) (response *simplejson.TimeSeriesResponse, err error) {
-	if target != "series" {
-		err = errors.New("unsupported series")
-		return
-	}
-
+func (h *handler) Query(_ context.Context, req *simplejson.TimeSeriesQueryArgs) (response *simplejson.TimeSeriesResponse, err error) {
 	for _, filter := range req.AdHocFilters {
 		log.WithFields(log.Fields{
 			"key":       filter.Key,
@@ -48,7 +38,7 @@ func (h *handler) Query(_ context.Context, target string, req *simplejson.TimeSe
 		}).Info("table request received")
 	}
 
-	response = new(simplejson.TimeSeriesResponse)
+	response = &simplejson.TimeSeriesResponse{}
 	response.DataPoints = make([]simplejson.DataPoint, 60)
 
 	timestamp := time.Now().Add(-1 * time.Hour)
@@ -62,12 +52,7 @@ func (h *handler) Query(_ context.Context, target string, req *simplejson.TimeSe
 	return
 }
 
-func (h *handler) TableQuery(_ context.Context, target string, req *simplejson.TableQueryArgs) (response *simplejson.TableQueryResponse, err error) {
-	if target != "table" {
-		err = errors.New("unsupported series")
-		return
-	}
-
+func (h *handler) TableQuery(_ context.Context, req *simplejson.TableQueryArgs) (response *simplejson.TableQueryResponse, err error) {
 	for _, filter := range req.AdHocFilters {
 		log.WithFields(log.Fields{
 			"key":       filter.Key,
@@ -107,7 +92,7 @@ func (h *handler) TableQuery(_ context.Context, target string, req *simplejson.T
 	return
 }
 
-func (h *handler) Annotations(_, _ string, _ *simplejson.RequestArgs) (annotations []simplejson.Annotation, err error) {
+func (h *handler) Annotations(_, _ string, _ *simplejson.AnnotationRequestArgs) (annotations []simplejson.Annotation, err error) {
 	annotations = append(annotations, simplejson.Annotation{
 		Time:  time.Now().Add(-5 * time.Minute),
 		Title: "foo",

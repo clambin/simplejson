@@ -6,40 +6,15 @@ import (
 	"github.com/clambin/go-metrics"
 	"github.com/gorilla/mux"
 	"net/http"
+	"sort"
 	"time"
 )
 
 // Server receives SimpleJSON requests from Grafana and dispatches them to the handler that serves the specified target.
-// If multiple handlers serve the same target name, the first handler in the list will receive the request.
 type Server struct {
 	Name       string
-	Handlers   []Handler
+	Handlers   map[string]Handler
 	httpServer *http.Server
-}
-
-// Handler implements the different Grafana SimpleJSON endpoints.  The interface only contains a single Endpoints()  function,
-// so that a handler only has to implement the endpoint functions (query, tablequery, annotation, etc.) that it needs.
-type Handler interface {
-	Endpoints() Endpoints
-}
-
-// TagKeysFunc returns supported tag names
-type TagKeysFunc func(ctx context.Context) []string
-
-// TagValuesFunc returns supported values for the specified tag name
-type TagValuesFunc func(ctx context.Context, key string) ([]string, error)
-
-// AnnotationsFunc handles requests for annotation
-type AnnotationsFunc func(name, query string, args *RequestArgs) ([]Annotation, error)
-
-// Endpoints contains the functions that implement each of the SimpleJson endpoints
-type Endpoints struct {
-	Search      func() []string     // /search endpoint: it returns the list of supported targets
-	Query       TimeSeriesQueryFunc // /query endpoint: handles timeSeries queries
-	TableQuery  TableQueryFunc      // /query endpoint: handles table queries
-	Annotations AnnotationsFunc     // /annotation endpoint: handles requests for annotation
-	TagKeys     TagKeysFunc         // /tag-keys endpoint: returns all supported tag names
-	TagValues   TagValuesFunc       // /tag-values endpoint: returns all supported values for the specified tag name
 }
 
 // Run starts the SimpleJSon Server.
@@ -52,13 +27,13 @@ func (server *Server) Run(port int) error {
 }
 
 // Shutdown stops a running Server.
-func (server *Server) Shutdown(ctx context.Context, timeout time.Duration) error {
-	if server.httpServer == nil {
-		return nil
+func (server *Server) Shutdown(ctx context.Context, timeout time.Duration) (err error) {
+	if server.httpServer != nil {
+		newCtx, cancel := context.WithTimeout(ctx, timeout)
+		defer cancel()
+		err = server.httpServer.Shutdown(newCtx)
 	}
-	newCtx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-	return server.httpServer.Shutdown(newCtx)
+	return
 }
 
 // GetRouter sets up an HTTP router. Useful if you want to hook other handlers to the HTTP Server.
@@ -72,5 +47,14 @@ func (server *Server) GetRouter() (r *mux.Router) {
 	r.HandleFunc("/annotation", server.annotations).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/tag-keys", server.tagKeys).Methods(http.MethodPost)
 	r.HandleFunc("/tag-values", server.tagValues).Methods(http.MethodPost)
+	return
+}
+
+// Targets returns a sorted list of supported targets
+func (server Server) Targets() (targets []string) {
+	for target := range server.Handlers {
+		targets = append(targets, target)
+	}
+	sort.Strings(targets)
 	return
 }
