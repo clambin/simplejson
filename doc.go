@@ -12,27 +12,25 @@ Server
 To create a SimpleJSON server, create a Server and run it:
 
 	s := simplejson.Server{
-		Handlers: []simplejson.Handler{myHandler},
+		Handlers: map[string]simplejson.Handler{
+			"my-target": myHandler,
+		},
 	}
 	err := s.Run(8080)
 
-This starts a server, listening on port 8080, with one handler (myHandler).
+This starts a server, listening on port 8080, with one target "my-target", served by myHandler.
 
 Handler
 
-A handler groups a set of targets and supports timeseries queries, table queues and/or annotation, possibly with tags.
-The Handler interface includes one function (Endpoints). This function returns the Grafana SimpleJSON endpoints that the handler supports.
-Those can be:
+A handler serves incoming requests from Grafana, e.g. queries, requests for annotations or tags.
+The Handler interface contains all functions a handler needs to implement. It contains only one function (Endpoints).
+This function returns the Grafana SimpleJSON endpoints that the handler supports. Those can be:
 
-
-	- Search()      implements the /search endpoint: it returns the list of supported targets
 	- Query()       implements the /query endpoint for timeseries targets
 	- TableQuery()  implements the /query endpoint for table targets
 	- Annotations() implements the /annotation endpoint
 	- TagKeys()     implements the /tag-keys endpoint
 	- TagValues()   implements the /tag-values endpoint
-
-Of these, Search() is mandatory. You will typically want to implement either Query or TableQuery.
 
 Here's an example of a handler that supports timeseries queries:
 
@@ -41,13 +39,8 @@ Here's an example of a handler that supports timeseries queries:
 
 	func (handler myHandler) Endpoints() simplejson.Endpoints {
 		return simplejson.Endpoints{
-			Search: handler.Search,
 			Query:  handler.Query
 		}
-	}
-
-	func (handler myHandler) Search() []string {
-		return []string{"myTarget"}
 	}
 
 	func (handler *myHandler) Query(ctx context.Context, target string, target *simplejson.TimeSeriesQueryArgs) (response *simplejson.QueryResponse, err error) {
@@ -57,7 +50,7 @@ Here's an example of a handler that supports timeseries queries:
 
 Timeseries Queries
 
-Timeseries queries returns values as a list of timestamp/value tuples. Here's an example of a timeseries query handler:
+Timeseries queries return values as a list of timestamp/value tuples. Here's an example of a timeseries query handler:
 
 	func (handler *myHandler) Query(_ context.Context, _ string, _ *simplejson.TimeSeriesQueryArgs) (response *simplejson.QueryResponse, err error) {
 		response = &simplejson.QueryResponse{
