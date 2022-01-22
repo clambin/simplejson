@@ -18,7 +18,7 @@ func main() {
 
 type handler struct{}
 
-func (h *handler) Endpoints() simplejson.Endpoints {
+func (h handler) Endpoints() simplejson.Endpoints {
 	return simplejson.Endpoints{
 		Query:       h.Query,
 		TableQuery:  h.TableQuery,

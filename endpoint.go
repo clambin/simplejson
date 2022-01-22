@@ -15,7 +15,6 @@ func handleEndpoint(w http.ResponseWriter, req *http.Request, request interface{
 			err = json.Unmarshal(body, &request)
 		}
 	}
-	_ = req.Body.Close()
 
 	if err != nil {
 		http.Error(w, "failed to parse request: "+err.Error(), http.StatusBadRequest)

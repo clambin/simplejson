@@ -11,12 +11,12 @@ import (
 )
 
 var queryDuration = promauto.NewSummaryVec(prometheus.SummaryOpts{
-	Name: "grafana_api_query_duration_seconds",
+	Name: prometheus.BuildFQName("simplejson", "query", "duration_seconds"),
 	Help: "Grafana SimpleJSON server duration of query requests by target",
 }, []string{"app", "type", "target"})
 
 var queryFailure = promauto.NewCounterVec(prometheus.CounterOpts{
-	Name: "grafana_api_query_failed_count",
+	Name: prometheus.BuildFQName("simplejson", "query", "failed_count"),
 	Help: "Grafana SimpleJSON server count of failed requests",
 }, []string{"app", "type", "target"})
 

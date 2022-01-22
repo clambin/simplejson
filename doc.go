@@ -66,7 +66,7 @@ Timeseries queries return values as a list of timestamp/value tuples. Here's an 
 
 Table Queries
 
-Table Queries, on the other hand, return data organized in columns & rows.  Each column needs to have the same number of rows:
+Table Queries, on the other hand, return data organized in columns and rows.  Each column needs to have the same number of rows:
 
 	func (handler *myHandler) TableQuery(_ context.Context, _ string, _ *simplejson.TableQueryArgs) (response *simplejson.QueryResponse, err error) {
 		response = &simplejson.TableQueryResponse{
@@ -79,6 +79,13 @@ Table Queries, on the other hand, return data organized in columns & rows.  Each
 		}
 		return
 	}
+
+Metrics
+
+simplejson exports two Prometheus metrics for performance analytics:
+
+	simplejson_query_duration_seconds: duration of query requests by target, in seconds
+	simplejson_query_failed_count:     number of failed query requests
 
 Other topics
 
