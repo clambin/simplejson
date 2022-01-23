@@ -30,8 +30,8 @@ func (h handler) Endpoints() simplejson.Endpoints {
 	}
 }
 
-func (h *handler) Query(_ context.Context, req *query.Args) (response *query.TimeSeriesResponse, err error) {
-	for _, filter := range req.AdHocFilters {
+func (h *handler) Query(_ context.Context, args query.Args) (response *query.TimeSeriesResponse, err error) {
+	for _, filter := range args.AdHocFilters {
 		log.WithFields(log.Fields{
 			"key":       filter.Key,
 			"operator":  filter.Operator,
@@ -54,8 +54,8 @@ func (h *handler) Query(_ context.Context, req *query.Args) (response *query.Tim
 	return
 }
 
-func (h *handler) TableQuery(_ context.Context, req *query.Args) (response *query.TableResponse, err error) {
-	for _, filter := range req.AdHocFilters {
+func (h *handler) TableQuery(_ context.Context, args query.Args) (response *query.TableResponse, err error) {
+	for _, filter := range args.AdHocFilters {
 		log.WithFields(log.Fields{
 			"key":       filter.Key,
 			"operator":  filter.Operator,
@@ -86,7 +86,7 @@ func (h *handler) TableQuery(_ context.Context, req *query.Args) (response *quer
 	return
 }
 
-func (h *handler) Annotations(_, _ string, _ *annotation.Args) (annotations []annotation.Annotation, err error) {
+func (h *handler) Annotations(_, _ string, _ annotation.Args) (annotations []annotation.Annotation, err error) {
 	annotations = append(annotations, annotation.Annotation{
 		Time:  time.Now().Add(-5 * time.Minute),
 		Title: "foo",

@@ -16,7 +16,7 @@ func (h handler) Endpoints() simplejson.Endpoints {
 	}
 }
 
-func (h *handler) Query(_ context.Context, _ *query.Args) (response *query.TimeSeriesResponse, err error) {
+func (h *handler) Query(_ context.Context, _ query.Args) (response *query.TimeSeriesResponse, err error) {
 	response = &query.TimeSeriesResponse{
 		DataPoints: make([]query.DataPoint, 60),
 	}
@@ -32,7 +32,7 @@ func (h *handler) Query(_ context.Context, _ *query.Args) (response *query.TimeS
 	return
 }
 
-func (h *handler) TableQuery(_ context.Context, _ *query.Args) (response *query.TableResponse, err error) {
+func (h *handler) TableQuery(_ context.Context, _ query.Args) (response *query.TableResponse, err error) {
 	timestamps := make(query.TimeColumn, 60)
 	seriesA := make(query.NumberColumn, 60)
 	seriesB := make(query.NumberColumn, 60)

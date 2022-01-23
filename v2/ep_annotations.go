@@ -29,7 +29,7 @@ func (server *Server) annotations(w http.ResponseWriter, req *http.Request) {
 			}
 
 			var newAnnotations []annotation.Annotation
-			newAnnotations, err = h.Endpoints().Annotations(request.Annotation.Name, request.Annotation.Query, &args)
+			newAnnotations, err = h.Endpoints().Annotations(request.Annotation.Name, request.Annotation.Query, args)
 
 			if err == nil {
 				annotations = append(annotations, newAnnotations...)

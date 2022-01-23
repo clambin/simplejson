@@ -22,10 +22,10 @@ type Endpoints struct {
 }
 
 // TimeSeriesQueryFunc handles timeseries queries
-type TimeSeriesQueryFunc func(ctx context.Context, args *query.Args) (*query.TimeSeriesResponse, error)
+type TimeSeriesQueryFunc func(ctx context.Context, args query.Args) (*query.TimeSeriesResponse, error)
 
 // TableQueryFunc handles for table queries
-type TableQueryFunc func(ctx context.Context, args *query.Args) (*query.TableResponse, error)
+type TableQueryFunc func(ctx context.Context, args query.Args) (*query.TableResponse, error)
 
 // TagKeysFunc returns supported tag names
 type TagKeysFunc func(ctx context.Context) []string
@@ -34,4 +34,4 @@ type TagKeysFunc func(ctx context.Context) []string
 type TagValuesFunc func(ctx context.Context, key string) ([]string, error)
 
 // AnnotationsFunc handles requests for annotation
-type AnnotationsFunc func(name, query string, args *annotation.Args) ([]annotation.Annotation, error)
+type AnnotationsFunc func(name, query string, args annotation.Args) ([]annotation.Annotation, error)

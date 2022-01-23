@@ -64,7 +64,7 @@ func (server *Server) handleQueryRequest(ctx context.Context, target string, req
 		return nil, fmt.Errorf("timeseries query not implemented for target '%s'", target)
 	}
 
-	return q(ctx, &request.Args)
+	return q(ctx, request.Args)
 }
 
 func (server *Server) handleTableQueryRequest(ctx context.Context, target string, request *query.Request) (*query.TableResponse, error) {
@@ -80,5 +80,5 @@ func (server *Server) handleTableQueryRequest(ctx context.Context, target string
 		return nil, fmt.Errorf("table query not implemented for target '%s'", target)
 	}
 
-	return q(ctx, &request.Args)
+	return q(ctx, request.Args)
 }

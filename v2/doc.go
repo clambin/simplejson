@@ -52,7 +52,7 @@ Timeseries Queries
 
 Timeseries queries return values as a list of timestamp/value tuples. Here's an example of a timeseries query handler:
 
-	func (handler *myHandler) Query(_ context.Context, _ string, _ *query.Args) (response *query.TimeSeriesResponse, err error) {
+	func (handler *myHandler) Query(_ context.Context, _ string, _ query.Args) (response *query.TimeSeriesResponse, err error) {
 		response = &query.TimeSeriesResponse{
 			Target: "A",
 			DataPoints: []query.DataPoint{
@@ -68,7 +68,7 @@ Table Queries
 
 Table Queries, on the other hand, return data organized in columns and rows.  Each column needs to have the same number of rows:
 
-	func (handler *myHandler) TableQuery(_ context.Context, _ string, _ *query.Args) (response *query.TableResponse, err error) {
+	func (handler *myHandler) TableQuery(_ context.Context, _ string, _ query.Args) (response *query.TableResponse, err error) {
 		response = &query.TableResponse{
 			Columns: []query.Column{
 				{ Text: "Time",     Data: query.TimeColumn{time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2020, 1, 1, 0, 1, 0, 0, time.UTC)} },

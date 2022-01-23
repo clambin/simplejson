@@ -225,15 +225,15 @@ func (handler *testAPIHandler) Endpoints() (endpoints simplejson.Endpoints) {
 	return
 }
 
-func (handler *testAPIHandler) Query(_ context.Context, _ *query.Args) (response *query.TimeSeriesResponse, err error) {
+func (handler *testAPIHandler) Query(_ context.Context, _ query.Args) (response *query.TimeSeriesResponse, err error) {
 	return handler.queryResponse, nil
 }
 
-func (handler *testAPIHandler) TableQuery(_ context.Context, _ *query.Args) (response *query.TableResponse, err error) {
+func (handler *testAPIHandler) TableQuery(_ context.Context, _ query.Args) (response *query.TableResponse, err error) {
 	return handler.tableQueryResponse, nil
 }
 
-func (handler *testAPIHandler) Annotations(_, _ string, _ *annotation.Args) (annotations []annotation.Annotation, err error) {
+func (handler *testAPIHandler) Annotations(_, _ string, _ annotation.Args) (annotations []annotation.Annotation, err error) {
 	return handler.annotations, nil
 }
 
