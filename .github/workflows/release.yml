@@ -17,14 +17,13 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: ${{ matrix.go }}
-      - name: test
-        run: |
-          go test ./... -race -coverprofile=coverage.txt -covermode=atomic
-          cd v2
-          go test ./... -race -coverprofile=coverage.txt -covermode=atomic
+      - name: v1
+        run: cd v1 && go test ./... -race -coverprofile=coverage.txt -covermode=atomic
+      - name: v2
+        run: cd v2 && go test ./... -race -coverprofile=coverage.txt -covermode=atomic
       - uses: codecov/codecov-action@v2.1.0
         with:
-          files: coverage.txt,v2/coverage.txt
+          files: v1/coverage.txt,v2/coverage.txt
           token: ${{ secrets.CODECOV_TOKEN }}
   publish:
     needs: test

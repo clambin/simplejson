@@ -2,7 +2,7 @@ package simplejson_test
 
 import (
 	"context"
-	"github.com/clambin/simplejson"
+	"github.com/clambin/simplejson/v1"
 	"time"
 )
 

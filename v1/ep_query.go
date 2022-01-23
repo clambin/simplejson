@@ -21,7 +21,6 @@ var queryFailure = promauto.NewCounterVec(prometheus.CounterOpts{
 }, []string{"app", "type", "target"})
 
 func (server *Server) query(w http.ResponseWriter, req *http.Request) {
-	// fixme: table query uses TableQueryRequest
 	var request QueryRequest
 	handleEndpoint(w, req, &request, func() (interface{}, error) {
 		var err error

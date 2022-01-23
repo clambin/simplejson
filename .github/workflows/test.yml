@@ -15,11 +15,12 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: ${{ matrix.go }}
-      - name: test
-        run: |
-          go test ./... -race
-          cd v2
-          go test ./... -race
+      - name: testserver
+        run: go test ./...
+      - name: v1
+        run: cd v1 && go test ./... -race
+      - name: v2
+        run: cd v2 && go test ./... -race
   codecov:
     runs-on: ubuntu-latest
     steps:
@@ -27,12 +28,11 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: 1.17
-      - name: test
-        run: |
-          go test ./... -coverprofile=coverage.txt -covermode=atomic
-          cd v2
-          go test ./... -coverprofile=coverage.txt -covermode=atomic
+      - name: v1
+        run: cd v1 && go test ./... -coverprofile=coverage.txt -covermode=atomic
+      - name: v2
+        run: cd v2 && go test ./... -coverprofile=coverage.txt -covermode=atomic
       - uses: codecov/codecov-action@v2.1.0
         with:
-          files: ./coverage.txt,v2/coverage.txt
+          files: v1/coverage.txt,v2/coverage.txt
           token: ${{ secrets.CODECOV_TOKEN }}
