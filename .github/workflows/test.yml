@@ -15,8 +15,6 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: ${{ matrix.go }}
-      - name: testserver
-        run: go test ./...
       - name: v1
         run: cd v1 && go test ./... -race
       - name: v2
