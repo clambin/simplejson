@@ -44,7 +44,7 @@ func (server *Server) GetRouter() (r *mux.Router) {
 	})
 	r.HandleFunc("/search", server.search).Methods(http.MethodPost)
 	r.HandleFunc("/query", server.query).Methods(http.MethodPost)
-	r.HandleFunc("/annotation", server.annotations).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/annotations", server.annotations).Methods(http.MethodPost, http.MethodOptions)
 	r.HandleFunc("/tag-keys", server.tagKeys).Methods(http.MethodPost)
 	r.HandleFunc("/tag-values", server.tagValues).Methods(http.MethodPost)
 	return

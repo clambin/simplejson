@@ -10,7 +10,7 @@ import (
 func TestAPIServer_Annotations(t *testing.T) {
 	serverRunning(t)
 
-	body, err := call(Port, "/annotation", http.MethodOptions, "")
+	body, err := call(Port, "/annotations", http.MethodOptions, "")
 
 	require.NoError(t, err)
 	assert.Equal(t, "", body)
@@ -27,7 +27,7 @@ func TestAPIServer_Annotations(t *testing.T) {
 		"query": ""
 	}
 }`
-	body, err = call(Port, "/annotation", http.MethodPost, req)
+	body, err = call(Port, "/annotations", http.MethodPost, req)
 
 	require.NoError(t, err)
 	assert.Equal(t, `[{"annotation":{"name":"snafu","datasource":"fubar","enable":true,"query":""},"time":1609459200000,"title":"foo","text":"bar","tags":["snafu"]}]`, body)
