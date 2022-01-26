@@ -5,9 +5,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/clambin/simplejson/v2"
-	"github.com/clambin/simplejson/v2/annotation"
-	"github.com/clambin/simplejson/v2/query"
+	"github.com/clambin/simplejson/v3"
+	"github.com/clambin/simplejson/v3/annotation"
+	"github.com/clambin/simplejson/v3/query"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
@@ -59,7 +59,7 @@ func TestServer_Metrics(t *testing.T) {
 	assert.Contains(t, body, "http_duration_seconds_count")
 }
 
-func BenchmarkAPIServer(b *testing.B) {
+func BenchmarkServer(b *testing.B) {
 	require.Eventually(b, func() bool {
 		body, err := call(Port, "/", http.MethodPost, "")
 		return err == nil && body == ""
@@ -127,17 +127,16 @@ func call(port int, path, method, body string) (response string, err error) {
 // Test Handler
 //
 
-type testAPIHandler struct {
+type testHandler struct {
 	noEndpoints bool
 
-	queryResponse      *query.TimeSeriesResponse
-	tableQueryResponse *query.TableResponse
-	annotations        []annotation.Annotation
-	tags               []string
-	tagValues          map[string][]string
+	queryResponse query.Response
+	annotations   []annotation.Annotation
+	tags          []string
+	tagValues     map[string][]string
 }
 
-var _ simplejson.Handler = &testAPIHandler{}
+var _ simplejson.Handler = &testHandler{}
 
 var (
 	queryResponses = map[string]*query.TimeSeriesResponse{
@@ -188,30 +187,27 @@ var (
 	}
 
 	handlers = map[string]simplejson.Handler{
-		"A": &testAPIHandler{
+		"A": &testHandler{
 			queryResponse: queryResponses["A"],
 			annotations:   annotations,
 			tags:          tags,
 			tagValues:     tagValues,
 		},
-		"B": &testAPIHandler{
+		"B": &testHandler{
 			queryResponse: queryResponses["B"],
 		},
-		"C": &testAPIHandler{
-			tableQueryResponse: tableQueryResponse["C"],
+		"C": &testHandler{
+			queryResponse: tableQueryResponse["C"],
 		},
 	}
 )
 
-func (handler *testAPIHandler) Endpoints() (endpoints simplejson.Endpoints) {
+func (handler *testHandler) Endpoints() (endpoints simplejson.Endpoints) {
 	if handler.noEndpoints {
 		return
 	}
 	if handler.queryResponse != nil {
 		endpoints.Query = handler.Query
-	}
-	if handler.tableQueryResponse != nil {
-		endpoints.TableQuery = handler.TableQuery
 	}
 	if len(handler.annotations) > 0 {
 		endpoints.Annotations = handler.Annotations
@@ -225,23 +221,19 @@ func (handler *testAPIHandler) Endpoints() (endpoints simplejson.Endpoints) {
 	return
 }
 
-func (handler *testAPIHandler) Query(_ context.Context, _ query.Args) (response *query.TimeSeriesResponse, err error) {
+func (handler *testHandler) Query(_ context.Context, _ query.Request) (response query.Response, err error) {
 	return handler.queryResponse, nil
 }
 
-func (handler *testAPIHandler) TableQuery(_ context.Context, _ query.Args) (response *query.TableResponse, err error) {
-	return handler.tableQueryResponse, nil
-}
-
-func (handler *testAPIHandler) Annotations(_, _ string, _ annotation.Args) (annotations []annotation.Annotation, err error) {
+func (handler *testHandler) Annotations(_ annotation.Request) (annotations []annotation.Annotation, err error) {
 	return handler.annotations, nil
 }
 
-func (handler *testAPIHandler) Tags(_ context.Context) (tags []string) {
+func (handler *testHandler) Tags(_ context.Context) (tags []string) {
 	return handler.tags
 }
 
-func (handler *testAPIHandler) TagValues(_ context.Context, tag string) (values []string, err error) {
+func (handler *testHandler) TagValues(_ context.Context, tag string) (values []string, err error) {
 	var ok bool
 	if values, ok = handler.tagValues[tag]; ok == false {
 		err = fmt.Errorf("unsupported tag '%s'", tag)

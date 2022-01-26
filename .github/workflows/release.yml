@@ -17,10 +17,7 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: ${{ matrix.go }}
-      - name: v1
-        run: cd v1 && go test ./... -race
-      - name: v2
-        run: cd v2 && go test ./... -race
+      - run: go test ./... -race
   publish:
     needs: test
     runs-on: ubuntu-latest

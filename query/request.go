@@ -1,7 +1,7 @@
 package query
 
 import (
-	"github.com/clambin/simplejson/v2/common"
+	"github.com/clambin/simplejson/v3/common"
 )
 
 // Request is a Query request. For each specified Target, the server will call the appropriate handler's Query or TableQuery
@@ -13,8 +13,8 @@ type Request struct {
 
 // Target specifies the requested target name and type.
 type Target struct {
-	Target string `json:"target"` // name of the target.
-	Type   string `json:"type"`   // "timeserie" or "" for timeseries. "table" for table queries.
+	Name string `json:"target"` // name of the target.
+	Type string `json:"type"`   // "timeserie" or "" for timeseries. "table" for table queries.
 }
 
 // Args contains the arguments for a Query.

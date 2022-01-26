@@ -2,7 +2,7 @@ package query_test
 
 import (
 	"encoding/json"
-	"github.com/clambin/simplejson/v2/query"
+	"github.com/clambin/simplejson/v3/query"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -33,8 +33,8 @@ func TestRequests(t *testing.T) {
 	assert.Equal(t, time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC), output.Range.From)
 	assert.Equal(t, time.Date(2020, 12, 31, 0, 0, 0, 0, time.UTC), output.Range.To)
 	require.Len(t, output.Targets, 2)
-	assert.Equal(t, "A", output.Targets[0].Target)
+	assert.Equal(t, "A", output.Targets[0].Name)
 	assert.Equal(t, "dataserie", output.Targets[0].Type)
-	assert.Equal(t, "B", output.Targets[1].Target)
+	assert.Equal(t, "B", output.Targets[1].Name)
 	assert.Equal(t, "table", output.Targets[1].Type)
 }

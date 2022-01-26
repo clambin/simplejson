@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestAPIServer_Annotations(t *testing.T) {
+func TestServer_Annotations(t *testing.T) {
 	serverRunning(t)
 
 	body, err := call(Port, "/annotations", http.MethodOptions, "")

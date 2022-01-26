@@ -6,10 +6,23 @@ import (
 	"time"
 )
 
+// Response interface for timeseries and table responses
+type Response interface {
+	MarshalJSON() ([]byte, error)
+}
+
 // TimeSeriesResponse is the response from a timeseries Query.
 type TimeSeriesResponse struct {
-	Target     string      `json:"target"`     // name of the target
-	DataPoints []DataPoint `json:"datapoints"` // values for the target
+	Target     string
+	DataPoints []DataPoint
+}
+
+// MarshalJSON converts a TimeSeriesResponse to JSON.
+func (t TimeSeriesResponse) MarshalJSON() (output []byte, err error) {
+	return json.Marshal(struct {
+		Target     string      `json:"target"`     // name of the target
+		DataPoints []DataPoint `json:"datapoints"` // values for the target
+	}{Target: t.Target, DataPoints: t.DataPoints})
 }
 
 // DataPoint contains one entry returned by a Query.
@@ -19,22 +32,9 @@ type DataPoint struct {
 }
 
 // MarshalJSON converts a DataPoint to JSON.
-func (d *DataPoint) MarshalJSON() ([]byte, error) {
-	out := []int64{d.Value, d.Timestamp.UnixNano() / 1000000}
+func (d DataPoint) MarshalJSON() ([]byte, error) {
+	out := []int64{d.Value, d.Timestamp.UnixMilli()}
 	return json.Marshal(out)
-}
-
-// UnmarshalJSON converts a JSON structure to a DataPoint.
-func (d *DataPoint) UnmarshalJSON(input []byte) (err error) {
-	var in []int64
-
-	if err = json.Unmarshal(input, &in); err == nil {
-		*d = DataPoint{
-			Value:     in[0],
-			Timestamp: time.Unix(0, in[1]*1000000),
-		}
-	}
-	return
 }
 
 // TableResponse is returned by a TableQuery, i.e. a slice of Column structures.
@@ -73,19 +73,19 @@ type tableResponseColumn struct {
 type tableResponseRow []interface{}
 
 // MarshalJSON converts a TableResponse to JSON.
-func (table *TableResponse) MarshalJSON() (output []byte, err error) {
+func (t TableResponse) MarshalJSON() (output []byte, err error) {
 	var columns []tableResponseColumn
 	var rows []tableResponseRow
 	var colTypes []string
 	var rowCount int
 
-	colTypes, rowCount, err = table.getColumnDetails()
+	colTypes, rowCount, err = t.getColumnDetails()
 
 	if err == nil {
-		columns, err = table.buildColumns(colTypes)
+		columns, err = t.buildColumns(colTypes)
 	}
 	if err == nil {
-		rows, err = table.buildRows(rowCount)
+		rows, err = t.buildRows(rowCount)
 	}
 	if err == nil {
 		output, err = json.Marshal(tableResponse{
@@ -97,8 +97,8 @@ func (table *TableResponse) MarshalJSON() (output []byte, err error) {
 	return
 }
 
-func (table *TableResponse) getColumnDetails() (colTypes []string, rowCount int, err error) {
-	for _, entry := range table.Columns {
+func (t TableResponse) getColumnDetails() (colTypes []string, rowCount int, err error) {
+	for _, entry := range t.Columns {
 		var dataCount int
 		switch data := entry.Data.(type) {
 		case TimeColumn:
@@ -124,21 +124,21 @@ func (table *TableResponse) getColumnDetails() (colTypes []string, rowCount int,
 	return
 }
 
-func (table *TableResponse) buildColumns(colTypes []string) (columns []tableResponseColumn, err error) {
+func (t TableResponse) buildColumns(colTypes []string) (columns []tableResponseColumn, err error) {
 	for index, entry := range colTypes {
 		columns = append(columns, tableResponseColumn{
-			Text: table.Columns[index].Text,
+			Text: t.Columns[index].Text,
 			Type: entry,
 		})
 	}
 	return
 }
 
-func (table *TableResponse) buildRows(rowCount int) (rows []tableResponseRow, err error) {
+func (t TableResponse) buildRows(rowCount int) (rows []tableResponseRow, err error) {
 	for row := 0; row < rowCount; row++ {
-		newRow := make(tableResponseRow, len(table.Columns))
+		newRow := make(tableResponseRow, len(t.Columns))
 
-		for column, entry := range table.Columns {
+		for column, entry := range t.Columns {
 			switch data := entry.Data.(type) {
 			case TimeColumn:
 				newRow[column] = data[row]

@@ -2,6 +2,7 @@ package simplejson
 
 import (
 	"encoding/json"
+	log "github.com/sirupsen/logrus"
 	"io"
 	"net/http"
 )
@@ -14,6 +15,7 @@ func handleEndpoint(w http.ResponseWriter, req *http.Request, request interface{
 		var body []byte
 		body, err = io.ReadAll(req.Body)
 		if err == nil {
+			log.Debugf("request: %s", string(body))
 			err = json.Unmarshal(body, &request)
 		}
 	}
@@ -39,6 +41,8 @@ func handleEndpoint(w http.ResponseWriter, req *http.Request, request interface{
 		http.Error(w, "failed to create response: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	log.Debugf("response: %s", string(output))
 
 	_, _ = w.Write(output)
 }

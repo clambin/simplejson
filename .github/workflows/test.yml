@@ -15,10 +15,7 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: ${{ matrix.go }}
-      - name: v1
-        run: cd v1 && go test ./... -race
-      - name: v2
-        run: cd v2 && go test ./... -race
+      - run: go test ./... -race
   codecov:
     runs-on: ubuntu-latest
     steps:
@@ -26,11 +23,8 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: 1.17
-      - name: v1
-        run: cd v1 && go test ./... -coverprofile=coverage.txt -covermode=atomic
-      - name: v2
-        run: cd v2 && go test ./... -coverprofile=coverage.txt -covermode=atomic
+      - run: go test ./... -coverprofile=coverage.txt -covermode=atomic
       - uses: codecov/codecov-action@v2.1.0
         with:
-          files: v1/coverage.txt,v2/coverage.txt
+          files: coverage.txt
           token: ${{ secrets.CODECOV_TOKEN }}

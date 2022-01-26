@@ -1,12 +1,12 @@
-module github.com/clambin/simplejson/v1
+module github.com/clambin/simplejson/v3
 
 go 1.17
 
 require (
 	github.com/clambin/go-metrics v0.2.1
-	// github.com/clambin/simplejson v0.10.0
 	github.com/gorilla/mux v1.8.0
 	github.com/prometheus/client_golang v1.12.0
+	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.7.0
 )
 

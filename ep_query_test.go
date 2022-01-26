@@ -3,7 +3,8 @@ package simplejson_test
 import (
 	"context"
 	"errors"
-	"github.com/clambin/simplejson/v1"
+	"fmt"
+	"github.com/clambin/simplejson/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"net/http"
@@ -12,7 +13,7 @@ import (
 	"time"
 )
 
-func TestAPIServer_Query(t *testing.T) {
+func TestServer_Query(t *testing.T) {
 	req := `{
 	"maxDataPoints": 100,
 	"interval": "1y",
@@ -48,7 +49,7 @@ func TestAPIServer_Query(t *testing.T) {
 
 }
 
-func TestAPIServer_TableQuery(t *testing.T) {
+func TestServer_TableQuery(t *testing.T) {
 	req := `{
 	"maxDataPoints": 100,
 	"interval": "1y",
@@ -73,7 +74,7 @@ func TestAPIServer_TableQuery(t *testing.T) {
 		"to": "2020-12-31T00:00:00.000Z"
 	},
 	"targets": [
-		{ "target": "D", "type": "table" }
+		{ "target": "D", "type": "" }
 	]
 }`
 	_, err = call(Port, "/query", http.MethodPost, req)
@@ -81,8 +82,8 @@ func TestAPIServer_TableQuery(t *testing.T) {
 
 }
 
-func TestAPIServer_MissingEndpoint(t *testing.T) {
-	s := simplejson.Server{Handlers: map[string]simplejson.Handler{"C": &testAPIHandler{noEndpoints: true}}}
+func TestServer_MissingEndpoint(t *testing.T) {
+	s := simplejson.Server{Handlers: map[string]simplejson.Handler{"C": &testHandler{noEndpoints: true}}}
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
@@ -98,21 +99,28 @@ func TestAPIServer_MissingEndpoint(t *testing.T) {
 		return err == nil && body == ""
 	}, 500*time.Millisecond, 10*time.Millisecond)
 
-	req := `{
+	const reqTemplate = `{
 	"maxDataPoints": 100,
 	"interval": "1y",
 	"range": {
 		"from": "2020-01-01T00:00:00.000Z",
 		"to": "2020-12-31T00:00:00.000Z"
 	},
-	"targets": [
-		{ "target": "C", "type": "table" }
-	]
+	"targets": [ { %s } ]
 }`
-	_, err := call(Port, "/query", http.MethodPost, req)
-	assert.NoError(t, err)
 
-	err = s.Shutdown(context.Background(), 15*time.Second)
+	for _, target := range []string{
+		`"target": "C"`,
+		`"target": "D"`,
+		`"target": "C", "type": "table"`,
+		`"target": "D", "type": "table"`,
+	} {
+		req := fmt.Sprintf(reqTemplate, target)
+		_, err := call(8082, "/query", http.MethodPost, req)
+		assert.Error(t, err, target)
+	}
+
+	err := s.Shutdown(context.Background(), 15*time.Second)
 	require.NoError(t, err)
 	wg.Wait()
 }

@@ -1,6 +1,7 @@
 package simplejson
 
 import (
+	"github.com/clambin/simplejson/v3/annotation"
 	"net/http"
 )
 
@@ -13,27 +14,20 @@ func (server *Server) annotations(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	var request AnnotationRequest
+	var request annotation.Request
 	handleEndpoint(w, req, &request, func() (response interface{}, err error) {
-		args := AnnotationRequestArgs{
-			Args: Args{
-				Range: request.Range,
-			},
-		}
-		var annotations []Annotation
+		var annotations []annotation.Annotation
 		for _, h := range server.Handlers {
 			if h.Endpoints().Annotations == nil {
 				continue
 			}
 
-			var newAnnotations []Annotation
-			newAnnotations, err = h.Endpoints().Annotations(request.Annotation.Name, request.Annotation.Query, &args)
+			var newAnnotations []annotation.Annotation
+			newAnnotations, err = h.Endpoints().Annotations(request)
 
-			if err != nil {
-				return
+			if err == nil {
+				annotations = append(annotations, newAnnotations...)
 			}
-
-			annotations = append(annotations, newAnnotations...)
 		}
 
 		for index := range annotations {
