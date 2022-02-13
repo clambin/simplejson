@@ -1,12 +1,6 @@
 name: Vulnerabilities
 
 on:
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - develop
   schedule:
     - cron: '23 3 * * 6'
 
