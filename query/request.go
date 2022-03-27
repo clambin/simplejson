@@ -1,6 +1,7 @@
 package query
 
 import (
+	"encoding/json"
 	"github.com/clambin/simplejson/v3/common"
 )
 
@@ -22,6 +23,18 @@ type Args struct {
 	common.Args
 	// Interval      QueryRequestDuration `json:"interval"`
 	MaxDataPoints uint64 `json:"maxDataPoints"`
+}
+
+// UnmarshalJSON unmarshalls a Request from JSON
+func (r *Request) UnmarshalJSON(b []byte) (err error) {
+	// workaround to avoid infinite loop
+	type Request2 Request
+	var c Request2
+	err = json.Unmarshal(b, &c)
+	if err == nil {
+		*r = Request(c)
+	}
+	return err
 }
 
 // type QueryRequestDuration time.Duration

@@ -1,6 +1,6 @@
 module github.com/clambin/simplejson/v3
 
-go 1.17
+go 1.18
 
 require (
 	github.com/clambin/go-metrics v0.2.1

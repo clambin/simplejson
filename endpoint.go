@@ -9,15 +9,12 @@ import (
 
 // handleEndpoint is a wrapper for simplejson endpoint handlers. It parses the incoming http.Request, calls the processor
 // with that request and writes the response to the http.ResponseWriter.
-func handleEndpoint(w http.ResponseWriter, req *http.Request, request interface{}, processor func() (interface{}, error)) {
-	var err error
-	if request != nil {
-		var body []byte
-		body, err = io.ReadAll(req.Body)
-		if err == nil {
-			log.Debugf("request: %s", string(body))
-			err = json.Unmarshal(body, &request)
-		}
+func handleEndpoint(w http.ResponseWriter, req *http.Request, request json.Unmarshaler, processor func() ([]json.Marshaler, error)) {
+	body, err := io.ReadAll(req.Body)
+
+	if err == nil && len(body) > 0 {
+		log.Debugf("request: %s", string(body))
+		err = json.Unmarshal(body, request)
 	}
 
 	if err != nil {

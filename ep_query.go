@@ -2,6 +2,7 @@ package simplejson
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/clambin/simplejson/v3/query"
 	"github.com/prometheus/client_golang/prometheus"
@@ -21,13 +22,13 @@ var queryFailure = promauto.NewCounterVec(prometheus.CounterOpts{
 
 func (server *Server) query(w http.ResponseWriter, req *http.Request) {
 	var request query.Request
-	handleEndpoint(w, req, &request, func() (interface{}, error) {
+	handleEndpoint(w, req, &request, func() ([]json.Marshaler, error) {
 		return server.handleQuery(req.Context(), request)
 	})
 }
 
-func (server *Server) handleQuery(ctx context.Context, request query.Request) (responses []interface{}, err error) {
-	responses = make([]interface{}, 0, len(request.Targets))
+func (server *Server) handleQuery(ctx context.Context, request query.Request) (responses []json.Marshaler, err error) {
+	responses = make([]json.Marshaler, 0, len(request.Targets))
 	for _, target := range request.Targets {
 		timer := prometheus.NewTimer(queryDuration.WithLabelValues(server.Name, target.Type, target.Name))
 

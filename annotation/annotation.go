@@ -25,6 +25,17 @@ type RequestDetails struct {
 	Query      string `json:"query"`
 }
 
+// UnmarshalJSON unmarshalls a Request from JSON
+func (r *Request) UnmarshalJSON(b []byte) (err error) {
+	type Request2 Request
+	var c Request2
+	err = json.Unmarshal(b, &c)
+	if err == nil {
+		*r = Request(c)
+	}
+	return err
+}
+
 // Annotation response. The annotation endpoint returns a slice of these.
 type Annotation struct {
 	Time    time.Time
@@ -44,7 +55,6 @@ func (annotation Annotation) MarshalJSON() (output []byte, err error) {
 		isRegion = true
 	}
 
-	// must be an easier way than this?
 	jsonResponse := struct {
 		Request  RequestDetails `json:"annotation"`
 		Time     int64          `json:"time"`
