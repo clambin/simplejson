@@ -9,7 +9,8 @@ type ordered interface {
 	time.Time | string
 }
 
-// Indexer holds a unique set of values, and records the order in which they were added
+// Indexer holds a unique set of values, and records the order in which they were added.
+// Currently, it supports string and time.Time data.
 type Indexer[T ordered] struct {
 	values  []T
 	indices map[T]int
