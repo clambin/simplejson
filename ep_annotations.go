@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-func (server *Server) annotations(w http.ResponseWriter, req *http.Request) {
+func (s *Server) annotations(w http.ResponseWriter, req *http.Request) {
 	if req.Method == http.MethodOptions {
 		w.Header().Set("Access-Control-Allow-Headers", "accept, content-type")
 		w.Header().Set("Access-Control-Allow-Methods", "POST")
@@ -18,7 +18,7 @@ func (server *Server) annotations(w http.ResponseWriter, req *http.Request) {
 	var request annotation.Request
 	handleEndpoint(w, req, &request, func() (response []json.Marshaler, err error) {
 		var annotations []annotation.Annotation
-		for _, h := range server.Handlers {
+		for _, h := range s.Handlers {
 			if h.Endpoints().Annotations == nil {
 				continue
 			}

@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-func (server *Server) search(w http.ResponseWriter, _ *http.Request) {
-	output, _ := json.Marshal(server.Targets())
+func (s *Server) search(w http.ResponseWriter, _ *http.Request) {
+	output, _ := json.Marshal(s.Targets())
 	_, _ = w.Write(output)
 }
