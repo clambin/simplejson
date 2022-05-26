@@ -36,7 +36,7 @@ func (d *Dataset) Add(timestamp time.Time, column string, value float64) {
 
 func (d *Dataset) ensureColumnExists(column string) {
 	_, added := d.columns.Add(column)
-	if added == false {
+	if !added {
 		return
 	}
 
@@ -84,7 +84,7 @@ func (d Dataset) GetValues(column string) (values []float64, ok bool) {
 	var index int
 	index, ok = d.columns.GetIndex(column)
 
-	if ok == false {
+	if !ok {
 		return
 	}
 
@@ -103,10 +103,10 @@ func (d *Dataset) FilterByRange(from, to time.Time) {
 	timestamps := make([]time.Time, 0, d.timestamps.Count())
 	var remove bool
 	for _, timestamp := range d.timestamps.List() {
-		if from.IsZero() == false && timestamp.Before(from) {
+		if !from.IsZero() && timestamp.Before(from) {
 			remove = true
 			continue
-		} else if to.IsZero() == false && timestamp.After(to) {
+		} else if !to.IsZero() && timestamp.After(to) {
 			remove = true
 			continue
 		}
@@ -114,7 +114,7 @@ func (d *Dataset) FilterByRange(from, to time.Time) {
 	}
 
 	// nothing to do here?
-	if remove == false {
+	if !remove {
 		return
 	}
 

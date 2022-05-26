@@ -48,7 +48,7 @@ func (s *Server) handleQuery(ctx context.Context, request query.Request) (respon
 func (s *Server) handleQueryRequest(ctx context.Context, target query.Target, request query.Request) (query.Response, error) {
 	handler, ok := s.Handlers[target.Name]
 
-	if ok == false {
+	if !ok {
 		return nil, fmt.Errorf("no handler found for target '%s'", target)
 	}
 

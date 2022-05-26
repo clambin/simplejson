@@ -13,6 +13,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 )
@@ -39,7 +40,7 @@ func TestMain(m *testing.M) {
 		}
 	}()
 
-	m.Run()
+	rc := m.Run()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	err = s.Shutdown(ctx, time.Second)
@@ -47,6 +48,8 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 	cancel()
+
+	os.Exit(rc)
 }
 
 func TestServer_Metrics(t *testing.T) {

@@ -50,7 +50,7 @@ type Annotation struct {
 func (annotation Annotation) MarshalJSON() (output []byte, err error) {
 	var timeEnd int64
 	var isRegion bool
-	if annotation.TimeEnd.IsZero() == false && annotation.TimeEnd.Equal(annotation.Time) == false {
+	if !annotation.TimeEnd.IsZero() && !annotation.TimeEnd.Equal(annotation.Time) {
 		timeEnd = annotation.TimeEnd.UnixMilli()
 		isRegion = true
 	}

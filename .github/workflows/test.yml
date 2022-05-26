@@ -5,43 +5,5 @@ on:
   pull_request_target:
 
 jobs:
-  go-lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
-        with:
-          go-version: 1.18
-      - name: lint
-        run: |
-          go install golang.org/x/lint/golint@latest
-          golint ./...
-  go-vet:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
-        with:
-          go-version: 1.18
-      - name: vet
-        run: go vet ./...
-        shell: bash
-  go-test:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        go-version:
-          - '1.18'
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
-        with:
-          go-version: ${{ matrix.go-version }}
-      - name: test
-        run: go test ./... -race -coverprofile=coverage.txt -covermode=atomic
-        shell: bash
-      - name: upload code coverage
-        uses: codecov/codecov-action@v3
-        with:
-          file: coverage.txt
-          token: ${{ secrets.CODECOV_TOKEN }}
+  test:
+    uses: clambin/workflows/.github/workflows/test.yaml@main

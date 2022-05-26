@@ -21,7 +21,7 @@ func main() {
 
 	log.SetLevel(log.DebugLevel)
 	err := s.Run(8080)
-	if errors.Is(err, http.ErrServerClosed) == false {
+	if !errors.Is(err, http.ErrServerClosed) {
 		panic(err)
 	}
 }
@@ -38,10 +38,10 @@ func (h handler) Endpoints() simplejson.Endpoints {
 }
 
 func (h *handler) Query(ctx context.Context, req query.Request) (response query.Response, err error) {
-	if h.table == false {
-		return h.timeSeriesQuery(ctx, req)
+	if h.table {
+		return h.tableQuery(ctx, req)
 	}
-	return h.tableQuery(ctx, req)
+	return h.timeSeriesQuery(ctx, req)
 }
 
 func (h *handler) timeSeriesQuery(_ context.Context, req query.Request) (response *query.TimeSeriesResponse, err error) {
