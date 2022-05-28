@@ -16,18 +16,15 @@ func handleEndpoint(w http.ResponseWriter, req *http.Request, request json.Unmar
 		}
 	}
 
-	var response interface{}
+	var response []json.Marshaler
 	if response, err = processor(); err != nil {
 		http.Error(w, "failed to process request: "+err.Error(), http.StatusInternalServerError)
 		return
 
 	}
 
-	var output []byte
-	if output, err = json.Marshal(response); err != nil {
+	if err = json.NewEncoder(w).Encode(response); err != nil {
 		http.Error(w, "failed to create response: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	_, _ = w.Write(output)
 }

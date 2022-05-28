@@ -12,7 +12,8 @@ func TestTags(t *testing.T) {
 
 	body, err := call(Port, "/tag-keys", http.MethodPost, "")
 	require.NoError(t, err)
-	assert.Equal(t, `[{"type":"string","text":"foo"},{"type":"string","text":"bar"}]`, body)
+	assert.Equal(t, `[{"type":"string","text":"foo"},{"type":"string","text":"bar"}]
+`, body)
 }
 
 func TestTagValues(t *testing.T) {
@@ -20,7 +21,8 @@ func TestTagValues(t *testing.T) {
 
 	body, err := call(Port, "/tag-values", http.MethodPost, `{"key": "foo"}`)
 	require.NoError(t, err)
-	assert.Equal(t, `[{"text":"A"},{"text":"B"}]`, body)
+	assert.Equal(t, `[{"text":"A"},{"text":"B"}]
+`, body)
 
 	_, err = call(Port, "/tag-values", http.MethodPost, `{"key": "foo"`)
 	assert.Error(t, err)
@@ -53,5 +55,6 @@ func TestAhHocFilter(t *testing.T) {
 
 	body, err := call(Port, "/query", http.MethodPost, req)
 	require.NoError(t, err)
-	assert.Equal(t, `[{"target":"B","datapoints":[[100,1577836800000],[99,1577836860000],[98,1577836920000]]}]`, body)
+	assert.Equal(t, `[{"target":"B","datapoints":[[100,1577836800000],[99,1577836860000],[98,1577836920000]]}]
+`, body)
 }

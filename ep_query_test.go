@@ -30,7 +30,8 @@ func TestServer_Query(t *testing.T) {
 	serverRunning(t)
 	body, err := call(Port, "/query", http.MethodPost, req)
 	require.NoError(t, err)
-	assert.Equal(t, `[{"target":"A","datapoints":[[100,1577836800000],[101,1577836860000],[103,1577836920000]]},{"target":"B","datapoints":[[100,1577836800000],[99,1577836860000],[98,1577836920000]]}]`, body)
+	assert.Equal(t, `[{"target":"A","datapoints":[[100,1577836800000],[101,1577836860000],[103,1577836920000]]},{"target":"B","datapoints":[[100,1577836800000],[99,1577836860000],[98,1577836920000]]}]
+`, body)
 
 	req = `{
 	"maxDataPoints": 100,
@@ -64,7 +65,8 @@ func TestServer_TableQuery(t *testing.T) {
 	serverRunning(t)
 	body, err := call(Port, "/query", http.MethodPost, req)
 	require.NoError(t, err)
-	assert.Equal(t, `[{"type":"table","columns":[{"text":"Time","type":"time"},{"text":"Label","type":"string"},{"text":"Series A","type":"number"},{"text":"Series B","type":"number"}],"rows":[["2020-01-01T00:00:00Z","foo",42,64.5],["2020-01-01T00:01:00Z","bar",43,100]]}]`, body)
+	assert.Equal(t, `[{"type":"table","columns":[{"text":"Time","type":"time"},{"text":"Label","type":"string"},{"text":"Series A","type":"number"},{"text":"Series B","type":"number"}],"rows":[["2020-01-01T00:00:00Z","foo",42,64.5],["2020-01-01T00:01:00Z","bar",43,100]]}]
+`, body)
 
 	req = `{
 	"maxDataPoints": 100,

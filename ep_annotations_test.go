@@ -30,5 +30,6 @@ func TestServer_Annotations(t *testing.T) {
 	body, err = call(Port, "/annotations", http.MethodPost, req)
 
 	require.NoError(t, err)
-	assert.Equal(t, `[{"annotation":{"name":"snafu","datasource":"fubar","enable":true,"query":""},"time":1609459200000,"title":"foo","text":"bar","tags":["snafu"]}]`, body)
+	assert.Equal(t, `[{"annotation":{"name":"snafu","datasource":"fubar","enable":true,"query":""},"time":1609459200000,"title":"foo","text":"bar","tags":["snafu"]}]
+`, body)
 }
