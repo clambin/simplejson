@@ -57,16 +57,18 @@ func (d Dataset) Size() int {
 func (d *Dataset) AddColumn(column string, processor func(values map[string]float64) float64) {
 	columns := d.columns.List()
 	for index, row := range d.data {
-		values := make(map[string]float64)
-		for _, c := range columns {
-			idx, _ := d.columns.GetIndex(c)
-			values[c] = row[idx]
-		}
-
-		newVal := processor(values)
-		d.data[index] = append(row, newVal)
+		d.data[index] = append(row, processor(d.rowValues(row, columns)))
 	}
 	d.columns.Add(column)
+}
+
+func (d Dataset) rowValues(row []float64, columns []string) (values map[string]float64) {
+	values = make(map[string]float64)
+	for _, column := range columns {
+		idx, _ := d.columns.GetIndex(column)
+		values[column] = row[idx]
+	}
+	return
 }
 
 // GetTimestamps returns the (sorted) list of timestamps in the dataset.

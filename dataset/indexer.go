@@ -38,7 +38,7 @@ func (idx Indexer[T]) Count() int {
 }
 
 // List returns the (sorted) values in the Indexer
-func (idx Indexer[T]) List() (values []T) {
+func (idx *Indexer[T]) List() (values []T) {
 	if !idx.inOrder {
 		sort.Slice(idx.values, func(i, j int) bool { return isLessThan(idx.values[i], idx.values[j]) })
 		idx.inOrder = true

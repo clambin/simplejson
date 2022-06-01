@@ -63,25 +63,6 @@ func TestDataset_FilterByRange(t *testing.T) {
 
 }
 
-func BenchmarkDataset_FilterByRange(b *testing.B) {
-	d := dataset.New()
-	timestamp := time.Date(2020, time.January, 1, 0, 0, 0, 0, time.UTC)
-	for day := 0; day < 5*365; day++ {
-		d.Add(timestamp, "A", float64(day))
-		timestamp = timestamp.Add(24 * time.Hour)
-	}
-
-	b.ResetTimer()
-
-	start := time.Date(2020, time.January, 1, 0, 0, 0, 0, time.UTC)
-	stop := timestamp
-	for i := 0; i < b.N; i++ {
-		d.FilterByRange(start, stop)
-		start = start.Add(12 * time.Hour)
-		stop = stop.Add(-12 * time.Hour)
-	}
-}
-
 func TestDataset_Accumulate(t *testing.T) {
 	d := dataset.New()
 	assert.NotNil(t, d)
@@ -150,4 +131,90 @@ func TestDataset_GenerateTableResponse(t *testing.T) {
 			},
 		},
 	}, response)
+}
+
+func BenchmarkDataset_Add(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		d := dataset.New()
+		for y := 0; y < 5; y++ {
+			timestamp := time.Date(2020, time.January, 1, 0, 0, 0, 0, time.UTC)
+			for day := 0; day < 365; day++ {
+				d.Add(timestamp, "A", float64(day))
+				timestamp = timestamp.Add(-24 * time.Hour)
+			}
+		}
+	}
+}
+
+func BenchmarkDataset_GetColumns(b *testing.B) {
+	d := dataset.New()
+	timestamp := time.Date(2020, time.January, 1, 0, 0, 0, 0, time.UTC)
+	for day := 0; day < 5*365; day++ {
+		d.Add(timestamp, "A", float64(day))
+		timestamp = timestamp.Add(-24 * time.Hour)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = d.GetColumns()
+	}
+}
+
+func BenchmarkDataset_GetTimestamps(b *testing.B) {
+	d := dataset.New()
+	timestamp := time.Date(2020, time.January, 1, 0, 0, 0, 0, time.UTC)
+	for day := 0; day < 5*365; day++ {
+		d.Add(timestamp, "A", float64(day))
+		timestamp = timestamp.Add(-24 * time.Hour)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		d.GetTimestamps()
+	}
+}
+
+func BenchmarkDataset_GetValues(b *testing.B) {
+	d := dataset.New()
+	timestamp := time.Date(2020, time.January, 1, 0, 0, 0, 0, time.UTC)
+	for day := 0; day < 5*365; day++ {
+		d.Add(timestamp, "A", float64(day))
+		timestamp = timestamp.Add(-24 * time.Hour)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = d.GetValues("A")
+	}
+}
+
+func BenchmarkDataset_FilterByRange(b *testing.B) {
+	d := dataset.New()
+	timestamp := time.Date(2020, time.January, 1, 0, 0, 0, 0, time.UTC)
+	for day := 0; day < 5*365; day++ {
+		d.Add(timestamp, "A", float64(day))
+		timestamp = timestamp.Add(24 * time.Hour)
+	}
+
+	b.ResetTimer()
+
+	start := time.Date(2020, time.January, 1, 0, 0, 0, 0, time.UTC)
+	stop := timestamp
+	for i := 0; i < b.N; i++ {
+		d.FilterByRange(start, stop)
+		start = start.Add(12 * time.Hour)
+		stop = stop.Add(-12 * time.Hour)
+	}
+}
+
+func BenchmarkDataset_AddColumn(b *testing.B) {
+	d := dataset.New()
+	timestamp := time.Date(2020, time.January, 1, 0, 0, 0, 0, time.UTC)
+	for day := 0; day < 5*365; day++ {
+		d.Add(timestamp, "A", float64(day))
+		timestamp = timestamp.Add(-24 * time.Hour)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		d.AddColumn("B", func(values map[string]float64) float64 {
+			return 1
+		})
+	}
 }
