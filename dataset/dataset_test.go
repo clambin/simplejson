@@ -218,3 +218,16 @@ func BenchmarkDataset_AddColumn(b *testing.B) {
 		})
 	}
 }
+
+func BenchmarkDataset_Copy(b *testing.B) {
+	d := dataset.New()
+	timestamp := time.Date(2020, time.January, 1, 0, 0, 0, 0, time.UTC)
+	for day := 0; day < 5*365; day++ {
+		d.Add(timestamp, "A", float64(day))
+		timestamp = timestamp.Add(-24 * time.Hour)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = d.Copy()
+	}
+}
