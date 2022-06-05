@@ -1,0 +1,1 @@
+{"annotation":{"name":"snafu","datasource":"datasource","enable":true,"query":"A == 10"},"time":1642896000000,"timeEnd":1642899600000,"isRegion":true,"title":"foo","text":"bar","tags":["A","B"]}
