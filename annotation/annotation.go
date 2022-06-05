@@ -65,7 +65,7 @@ func (annotation Annotation) MarshalJSON() (output []byte, err error) {
 		Tags     []string       `json:"tags"`
 	}{
 		Request:  annotation.Request,
-		Time:     annotation.Time.UnixNano() / 1e6,
+		Time:     annotation.Time.UnixMilli(),
 		TimeEnd:  timeEnd,
 		IsRegion: isRegion,
 		Title:    annotation.Title,

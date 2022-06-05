@@ -1,6 +1,7 @@
 package dataset_test
 
 import (
+	"flag"
 	"github.com/clambin/simplejson/v3/dataset"
 	"github.com/clambin/simplejson/v3/query"
 	"github.com/stretchr/testify/assert"
@@ -8,6 +9,8 @@ import (
 	"testing"
 	"time"
 )
+
+var update = flag.Bool("update", false, "update .golden files")
 
 func TestDataset_Basic(t *testing.T) {
 	d := dataset.New()

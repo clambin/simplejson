@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"github.com/clambin/simplejson/v3"
 	"github.com/clambin/simplejson/v3/annotation"
@@ -18,7 +19,10 @@ import (
 	"time"
 )
 
-var Port int
+var (
+	Port   int
+	update = flag.Bool("update", false, "update .golden files")
+)
 
 func TestMain(m *testing.M) {
 	s := simplejson.Server{

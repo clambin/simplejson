@@ -8,6 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"net/http"
+	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -30,10 +32,23 @@ func TestServer_Query(t *testing.T) {
 	serverRunning(t)
 	body, err := call(Port, "/query", http.MethodPost, req)
 	require.NoError(t, err)
-	assert.Equal(t, `[{"target":"A","datapoints":[[100,1577836800000],[101,1577836860000],[103,1577836920000]]},{"target":"B","datapoints":[[100,1577836800000],[99,1577836860000],[98,1577836920000]]}]
-`, body)
 
-	req = `{
+	gp := filepath.Join("testdata", t.Name()+".golden")
+	if *update {
+		t.Logf("updating golden file for %s", t.Name())
+		err = os.WriteFile(gp, []byte(body), 0644)
+		require.NoError(t, err, "failed to update golden file")
+	}
+
+	var golden []byte
+	golden, err = os.ReadFile(gp)
+	require.NoError(t, err)
+
+	assert.Equal(t, string(golden), body)
+}
+
+func TestServer_Query_Fail(t *testing.T) {
+	req := `{
 	"maxDataPoints": 100,
 	"interval": "1y",
 	"range": {
@@ -44,8 +59,8 @@ func TestServer_Query(t *testing.T) {
 		{ "target": "D", "type": "timeserie" },
 	]
 }`
-
-	_, err = call(Port, "/query", http.MethodPost, req)
+	serverRunning(t)
+	_, err := call(Port, "/query", http.MethodPost, req)
 	require.Error(t, err)
 
 }
@@ -65,10 +80,23 @@ func TestServer_TableQuery(t *testing.T) {
 	serverRunning(t)
 	body, err := call(Port, "/query", http.MethodPost, req)
 	require.NoError(t, err)
-	assert.Equal(t, `[{"type":"table","columns":[{"text":"Time","type":"time"},{"text":"Label","type":"string"},{"text":"Series A","type":"number"},{"text":"Series B","type":"number"}],"rows":[["2020-01-01T00:00:00Z","foo",42,64.5],["2020-01-01T00:01:00Z","bar",43,100]]}]
-`, body)
 
-	req = `{
+	gp := filepath.Join("testdata", t.Name()+".golden")
+	if *update {
+		t.Logf("updating golden file for %s", t.Name())
+		err = os.WriteFile(gp, []byte(body), 0644)
+		require.NoError(t, err, "failed to update golden file")
+	}
+
+	var g []byte
+	g, err = os.ReadFile(gp)
+	require.NoError(t, err)
+
+	assert.Equal(t, body, string(g))
+}
+
+func TestServer_TableQuery_Fail(t *testing.T) {
+	req := `{
 	"maxDataPoints": 100,
 	"interval": "1y",
 	"range": {
@@ -79,7 +107,8 @@ func TestServer_TableQuery(t *testing.T) {
 		{ "target": "D", "type": "" }
 	]
 }`
-	_, err = call(Port, "/query", http.MethodPost, req)
+	serverRunning(t)
+	_, err := call(Port, "/query", http.MethodPost, req)
 	require.Error(t, err)
 
 }

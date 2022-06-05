@@ -4,6 +4,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"net/http"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -28,8 +30,18 @@ func TestServer_Annotations(t *testing.T) {
 	}
 }`
 	body, err = call(Port, "/annotations", http.MethodPost, req)
-
 	require.NoError(t, err)
-	assert.Equal(t, `[{"annotation":{"name":"snafu","datasource":"fubar","enable":true,"query":""},"time":1609459200000,"title":"foo","text":"bar","tags":["snafu"]}]
-`, body)
+
+	gp := filepath.Join("testdata", t.Name()+".golden")
+	if *update {
+		t.Logf("updating golden file for %s", t.Name())
+		err = os.WriteFile(gp, []byte(body), 0644)
+		require.NoError(t, err, "failed to update golden file")
+	}
+
+	var g []byte
+	g, err = os.ReadFile(gp)
+	require.NoError(t, err)
+
+	assert.Equal(t, body, string(g))
 }

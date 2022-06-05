@@ -1,16 +1,23 @@
 package query_test
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/json"
+	"flag"
 	"github.com/clambin/simplejson/v3/query"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 )
 
+var update = flag.Bool("update", false, "update .golden files")
+
 func TestWriteResponseDataSeries(t *testing.T) {
-	in := query.TimeSeriesResponse{
+	r := query.TimeSeriesResponse{
 		Target: "A",
 		DataPoints: []query.DataPoint{
 			{Value: 100, Timestamp: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)},
@@ -19,17 +26,30 @@ func TestWriteResponseDataSeries(t *testing.T) {
 		},
 	}
 
-	expected := `{"target":"A","datapoints":[[100,1577836800000],[101,1577840400000],[102,1577844000000]]}`
-
-	out, err := json.Marshal(in)
+	var b bytes.Buffer
+	w := bufio.NewWriter(&b)
+	err := json.NewEncoder(w).Encode(r)
 	require.NoError(t, err)
-	assert.Equal(t, expected, string(out))
+	_ = w.Flush()
+
+	gp := filepath.Join("testdata", t.Name()+".golden")
+	if *update {
+		t.Logf("updating golden file for %s", t.Name())
+		err = os.WriteFile(gp, b.Bytes(), 0644)
+		require.NoError(t, err, "failed to update golden file")
+	}
+
+	var g []byte
+	g, err = os.ReadFile(gp)
+	require.NoError(t, err)
+
+	assert.True(t, bytes.Equal(b.Bytes(), g))
 }
 
 func TestWriteResponseTable(t *testing.T) {
 	testDate := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
 
-	in := query.TableResponse{
+	r := query.TableResponse{
 		Columns: []query.Column{
 			{Text: "Time", Data: query.TimeColumn{testDate, testDate}},
 			{Text: "Label", Data: query.StringColumn{"foo", "bar"}},
@@ -38,12 +58,25 @@ func TestWriteResponseTable(t *testing.T) {
 		},
 	}
 
-	expected := `{"type":"table","columns":[{"text":"Time","type":"time"},{"text":"Label","type":"string"},{"text":"Series A","type":"number"},{"text":"Series B","type":"number"}],"rows":[["2020-01-01T00:00:00Z","foo",42,64.5],["2020-01-01T00:00:00Z","bar",43,100]]}`
-
-	out, err := json.Marshal(in)
-
+	var b bytes.Buffer
+	w := bufio.NewWriter(&b)
+	err := json.NewEncoder(w).Encode(r)
 	require.NoError(t, err)
-	assert.Equal(t, expected, string(out))
+	_ = w.Flush()
+
+	gp := filepath.Join("testdata", t.Name()+".golden")
+	if *update {
+		t.Logf("updating golden file for %s", t.Name())
+		err = os.WriteFile(gp, b.Bytes(), 0644)
+		require.NoError(t, err, "failed to update golden file")
+	}
+
+	var g []byte
+	g, err = os.ReadFile(gp)
+	require.NoError(t, err)
+
+	assert.True(t, bytes.Equal(b.Bytes(), g))
+
 }
 
 func TestWriteBadResponseTable(t *testing.T) {
@@ -91,9 +124,23 @@ func TestWriteCombinedResponse(t *testing.T) {
 		packaged = append(packaged, table)
 	}
 
-	output, err := json.Marshal(packaged)
-
-	expected := `[{"target":"A","datapoints":[[100,1577836800000],[101,1577840400000],[102,1577844000000]]},{"type":"table","columns":[{"text":"Time","type":"time"},{"text":"Label","type":"string"},{"text":"Series A","type":"number"},{"text":"Series B","type":"number"}],"rows":[["2020-01-01T00:00:00Z","foo",42,64.5],["2020-01-01T00:00:00Z","bar",43,100]]}]`
+	var b bytes.Buffer
+	w := bufio.NewWriter(&b)
+	err := json.NewEncoder(w).Encode(packaged)
 	require.NoError(t, err)
-	assert.Equal(t, expected, string(output))
+	_ = w.Flush()
+
+	gp := filepath.Join("testdata", t.Name()+".golden")
+	if *update {
+		t.Logf("updating golden file for %s", t.Name())
+		err = os.WriteFile(gp, b.Bytes(), 0644)
+		require.NoError(t, err, "failed to update golden file")
+	}
+
+	var g []byte
+	g, err = os.ReadFile(gp)
+	require.NoError(t, err)
+
+	assert.True(t, bytes.Equal(b.Bytes(), g))
+
 }
