@@ -16,12 +16,11 @@ var update = flag.Bool("update", false, "update .golden files")
 
 func TestTable_CreateTableResponse(t *testing.T) {
 	table := createTable(10)
-	response, err := table.CreateTableResponse()
-	require.NoError(t, err)
+	response := table.CreateTableResponse()
 
 	var b bytes.Buffer
 	w := bufio.NewWriter(&b)
-	err = json.NewEncoder(w).Encode(response)
+	err := json.NewEncoder(w).Encode(response)
 	require.NoError(t, err)
 	_ = w.Flush()
 

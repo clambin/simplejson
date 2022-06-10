@@ -7,14 +7,14 @@ import (
 )
 
 // CreateTableResponse creates a simplejson TableResponse from a Dataset
-func (t Table) CreateTableResponse() (*query.TableResponse, error) {
+func (t Table) CreateTableResponse() *query.TableResponse {
 	columns := make([]query.Column, len(t.Frame.Fields))
 
 	for i, f := range t.Frame.Fields {
 		columns[i] = makeColumn(f)
 	}
 
-	return &query.TableResponse{Columns: columns}, nil
+	return &query.TableResponse{Columns: columns}
 }
 
 func makeColumn(f *data.Field) (column query.Column) {
