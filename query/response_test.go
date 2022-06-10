@@ -39,11 +39,11 @@ func TestWriteResponseDataSeries(t *testing.T) {
 		require.NoError(t, err, "failed to update golden file")
 	}
 
-	var g []byte
-	g, err = os.ReadFile(gp)
+	var golden []byte
+	golden, err = os.ReadFile(gp)
 	require.NoError(t, err)
 
-	assert.True(t, bytes.Equal(b.Bytes(), g))
+	assert.Equal(t, string(golden), b.String())
 }
 
 func TestWriteResponseTable(t *testing.T) {
@@ -71,11 +71,11 @@ func TestWriteResponseTable(t *testing.T) {
 		require.NoError(t, err, "failed to update golden file")
 	}
 
-	var g []byte
-	g, err = os.ReadFile(gp)
+	var golden []byte
+	golden, err = os.ReadFile(gp)
 	require.NoError(t, err)
 
-	assert.True(t, bytes.Equal(b.Bytes(), g))
+	assert.Equal(t, string(golden), b.String())
 
 }
 
@@ -137,10 +137,9 @@ func TestWriteCombinedResponse(t *testing.T) {
 		require.NoError(t, err, "failed to update golden file")
 	}
 
-	var g []byte
-	g, err = os.ReadFile(gp)
+	var golden []byte
+	golden, err = os.ReadFile(gp)
 	require.NoError(t, err)
 
-	assert.True(t, bytes.Equal(b.Bytes(), g))
-
+	assert.Equal(t, string(golden), b.String())
 }

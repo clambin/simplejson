@@ -74,27 +74,18 @@ type tableResponseRow []interface{}
 
 // MarshalJSON converts a TableResponse to JSON.
 func (t TableResponse) MarshalJSON() (output []byte, err error) {
-	var columns []tableResponseColumn
-	var rows []tableResponseRow
 	var colTypes []string
 	var rowCount int
 
-	colTypes, rowCount, err = t.getColumnDetails()
+	if colTypes, rowCount, err = t.getColumnDetails(); err != nil {
+		return
+	}
 
-	if err == nil {
-		columns, err = t.buildColumns(colTypes)
-	}
-	if err == nil {
-		rows, err = t.buildRows(rowCount)
-	}
-	if err == nil {
-		output, err = json.Marshal(tableResponse{
-			Type:    "table",
-			Columns: columns,
-			Rows:    rows,
-		})
-	}
-	return
+	return json.Marshal(tableResponse{
+		Type:    "table",
+		Columns: t.buildColumns(colTypes),
+		Rows:    t.buildRows(rowCount),
+	})
 }
 
 func (t TableResponse) getColumnDetails() (colTypes []string, rowCount int, err error) {
@@ -124,7 +115,7 @@ func (t TableResponse) getColumnDetails() (colTypes []string, rowCount int, err 
 	return
 }
 
-func (t TableResponse) buildColumns(colTypes []string) (columns []tableResponseColumn, err error) {
+func (t TableResponse) buildColumns(colTypes []string) (columns []tableResponseColumn) {
 	for index, entry := range colTypes {
 		columns = append(columns, tableResponseColumn{
 			Text: t.Columns[index].Text,
@@ -134,7 +125,7 @@ func (t TableResponse) buildColumns(colTypes []string) (columns []tableResponseC
 	return
 }
 
-func (t TableResponse) buildRows(rowCount int) (rows []tableResponseRow, err error) {
+func (t TableResponse) buildRows(rowCount int) (rows []tableResponseRow) {
 	for row := 0; row < rowCount; row++ {
 		newRow := make(tableResponseRow, len(t.Columns))
 
