@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/clambin/go-metrics v0.5.0
 	github.com/gorilla/mux v1.8.0
-	github.com/grafana/grafana-plugin-sdk-go v0.136.0
+	github.com/grafana/grafana-plugin-sdk-go v0.137.0
 	github.com/prometheus/client_golang v1.12.2
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.7.2
