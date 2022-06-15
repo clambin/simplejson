@@ -28,17 +28,16 @@ func TestTable_FilterByTime(t *testing.T) {
 	}, output.GetTimestamps())
 }
 
-func TestTable_FilterByTime_Panic(t *testing.T) {
+func TestTable_FilterByTime_Empty(t *testing.T) {
 	table := data.Table{Frame: grafanaData.NewFrame("bad")}
 
-	assert.Panics(t, func() {
-		_ = table.Filter(query.Args{
-			Args: common.Args{
-				Range: common.Range{
-					From: time.Date(2022, 6, 5, 0, 0, 0, 0, time.UTC),
-					To:   time.Date(2022, 6, 7, 0, 0, 0, 0, time.UTC),
-				},
+	f := table.Filter(query.Args{
+		Args: common.Args{
+			Range: common.Range{
+				From: time.Date(2022, 6, 5, 0, 0, 0, 0, time.UTC),
+				To:   time.Date(2022, 6, 7, 0, 0, 0, 0, time.UTC),
 			},
-		})
+		},
 	})
+	assert.NotNil(t, f.Frame)
 }
