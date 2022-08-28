@@ -48,7 +48,7 @@ func (d *Dataset) ensureColumnExists(column string) {
 }
 
 // Size returns the number of rows in the dataset.
-func (d Dataset) Size() int {
+func (d *Dataset) Size() int {
 	return d.timestamps.Count()
 }
 
@@ -62,7 +62,7 @@ func (d *Dataset) AddColumn(column string, processor func(values map[string]floa
 	d.columns.Add(column)
 }
 
-func (d Dataset) rowValues(row []float64, columns []string) (values map[string]float64) {
+func (d *Dataset) rowValues(row []float64, columns []string) (values map[string]float64) {
 	values = make(map[string]float64)
 	for _, column := range columns {
 		idx, _ := d.columns.GetIndex(column)
@@ -72,17 +72,17 @@ func (d Dataset) rowValues(row []float64, columns []string) (values map[string]f
 }
 
 // GetTimestamps returns the (sorted) list of timestamps in the dataset.
-func (d Dataset) GetTimestamps() (timestamps []time.Time) {
+func (d *Dataset) GetTimestamps() (timestamps []time.Time) {
 	return d.timestamps.List()
 }
 
 // GetColumns returns the (sorted) list of column names.
-func (d Dataset) GetColumns() (columns []string) {
+func (d *Dataset) GetColumns() (columns []string) {
 	return d.columns.List()
 }
 
 // GetValues returns the value for the specified column for each timestamp in the dataset. The values are sorted by timestamp.
-func (d Dataset) GetValues(column string) (values []float64, ok bool) {
+func (d *Dataset) GetValues(column string) (values []float64, ok bool) {
 	var index int
 	index, ok = d.columns.GetIndex(column)
 
@@ -147,7 +147,7 @@ func (d *Dataset) Accumulate() {
 }
 
 // Copy returns a copy of the dataset
-func (d Dataset) Copy() (clone *Dataset) {
+func (d *Dataset) Copy() (clone *Dataset) {
 	clone = &Dataset{
 		data:       make([][]float64, len(d.data)),
 		timestamps: d.timestamps.Copy(),
@@ -161,7 +161,7 @@ func (d Dataset) Copy() (clone *Dataset) {
 }
 
 // GenerateTableResponse creates a TableResponse for the dataset
-func (d Dataset) GenerateTableResponse() (response *query.TableResponse) {
+func (d *Dataset) GenerateTableResponse() (response *query.TableResponse) {
 	response = &query.TableResponse{
 		Columns: []query.Column{{
 			Text: "timestamp",

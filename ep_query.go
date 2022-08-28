@@ -28,15 +28,15 @@ func (s *Server) query(w http.ResponseWriter, req *http.Request) {
 }
 
 func (s *Server) handleQuery(ctx context.Context, request query.Request) (responses []json.Marshaler, err error) {
-	responses = make([]json.Marshaler, 0, len(request.Targets))
-	for _, target := range request.Targets {
+	responses = make([]json.Marshaler, len(request.Targets))
+	for index, target := range request.Targets {
 		timer := prometheus.NewTimer(queryDuration.WithLabelValues(s.Name, target.Type, target.Name))
 
 		var response query.Response
 		response, err = s.handleQueryRequest(ctx, target, request)
 		timer.ObserveDuration()
 		if err == nil {
-			responses = append(responses, response)
+			responses[index] = response
 		} else {
 			queryFailure.WithLabelValues(s.Name, target.Type, target.Name).Add(1.0)
 			break

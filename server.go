@@ -51,7 +51,7 @@ func (s *Server) GetRouter() (r *mux.Router) {
 }
 
 // Targets returns a sorted list of supported targets
-func (s Server) Targets() (targets []string) {
+func (s *Server) Targets() (targets []string) {
 	for target := range s.Handlers {
 		targets = append(targets, target)
 	}

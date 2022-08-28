@@ -22,12 +22,11 @@ import (
 var (
 	Port   int
 	update = flag.Bool("update", false, "update .golden files")
+	s      = simplejson.Server{
+		Handlers: handlers}
 )
 
 func TestMain(m *testing.M) {
-	s := simplejson.Server{
-		Handlers: handlers}
-
 	listener, err := net.Listen("tcp4", ":0")
 	if err != nil {
 		panic(err)
@@ -64,33 +63,6 @@ func TestServer_Metrics(t *testing.T) {
 	assert.Contains(t, body, "http_duration_seconds")
 	assert.Contains(t, body, "http_duration_seconds_sum")
 	assert.Contains(t, body, "http_duration_seconds_count")
-}
-
-func BenchmarkServer(b *testing.B) {
-	require.Eventually(b, func() bool {
-		body, err := call(Port, "/", http.MethodPost, "")
-		return err == nil && body == ""
-	}, 500*time.Millisecond, 10*time.Millisecond)
-
-	req := `{
-	"maxDataPoints": 100,
-	"interval": "1y",
-	"range": {
-		"from": "2020-01-01T00:00:00.000Z",
-		"to": "2020-12-31T00:00:00.000Z"
-	},
-	"targets": [
-		{ "target": "A" },
-		{ "target": "B" }
-	]
-}`
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		_, err := call(Port, "/query", http.MethodPost, req)
-		if err != nil {
-			b.Fatal(err)
-		}
-	}
 }
 
 func serverRunning(t *testing.T) {
