@@ -41,7 +41,7 @@ func (v value) MarshalJSON() (b []byte, err error) {
 	return json.Marshal(v2)
 }
 
-func (s *Server) tagKeys(w http.ResponseWriter, req *http.Request) {
+func (s *Server) TagKeys(w http.ResponseWriter, req *http.Request) {
 	handleEndpoint(w, req, nil, func() (keys []json.Marshaler, err error) {
 		for _, handler := range s.Handlers {
 			if handler.Endpoints().TagKeys != nil {
@@ -54,7 +54,7 @@ func (s *Server) tagKeys(w http.ResponseWriter, req *http.Request) {
 	})
 }
 
-func (s *Server) tagValues(w http.ResponseWriter, req *http.Request) {
+func (s *Server) TagValues(w http.ResponseWriter, req *http.Request) {
 	var key valueKey
 	handleEndpoint(w, req, &key, func() (response []json.Marshaler, err error) {
 		for _, handler := range s.Handlers {

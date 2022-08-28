@@ -1,23 +1,20 @@
 package simplejson_test
 
 import (
+	"bytes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"io"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
 )
 
 func TestServer_Annotations(t *testing.T) {
-	serverRunning(t)
-
-	body, err := call(Port, "/annotations", http.MethodOptions, "")
-
-	require.NoError(t, err)
-	assert.Equal(t, "", body)
-
-	req := `{
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodPost, "", bytes.NewBufferString(`{
 	"range": {
 		"from": "2020-01-01T00:00:00.000Z",
 		"to": "2020-12-31T00:00:00.000Z"
@@ -28,14 +25,16 @@ func TestServer_Annotations(t *testing.T) {
 		"enable": true,
 		"query": ""
 	}
-}`
-	body, err = call(Port, "/annotations", http.MethodPost, req)
-	require.NoError(t, err)
+}`))
+
+	s.Annotations(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+	body, err := io.ReadAll(w.Body)
 
 	gp := filepath.Join("testdata", t.Name()+".golden")
 	if *update {
 		t.Logf("updating golden file for %s", t.Name())
-		err = os.WriteFile(gp, []byte(body), 0644)
+		err = os.WriteFile(gp, body, 0644)
 		require.NoError(t, err, "failed to update golden file")
 	}
 
@@ -43,5 +42,16 @@ func TestServer_Annotations(t *testing.T) {
 	g, err = os.ReadFile(gp)
 	require.NoError(t, err)
 
-	assert.Equal(t, body, string(g))
+	assert.Equal(t, string(body), string(g))
+}
+
+func TestServer_Annotations_Options(t *testing.T) {
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodOptions, "", nil)
+
+	s.Annotations(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "accept, content-type", w.Header().Get("Access-Control-Allow-Headers"))
+	assert.Equal(t, http.MethodPost, w.Header().Get("Access-Control-Allow-Methods"))
+	assert.Equal(t, "*", w.Header().Get("Access-Control-Allow-Origin"))
 }

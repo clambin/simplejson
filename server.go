@@ -42,11 +42,11 @@ func (s *Server) GetRouter() (r *mux.Router) {
 	r.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
-	r.HandleFunc("/search", s.search).Methods(http.MethodPost)
-	r.HandleFunc("/query", s.query).Methods(http.MethodPost)
-	r.HandleFunc("/annotations", s.annotations).Methods(http.MethodPost, http.MethodOptions)
-	r.HandleFunc("/tag-keys", s.tagKeys).Methods(http.MethodPost)
-	r.HandleFunc("/tag-values", s.tagValues).Methods(http.MethodPost)
+	r.HandleFunc("/search", s.Search).Methods(http.MethodPost)
+	r.HandleFunc("/query", s.Query).Methods(http.MethodPost)
+	r.HandleFunc("/annotations", s.Annotations).Methods(http.MethodPost, http.MethodOptions)
+	r.HandleFunc("/tag-keys", s.TagKeys).Methods(http.MethodPost)
+	r.HandleFunc("/tag-values", s.TagValues).Methods(http.MethodPost)
 	return
 }
 

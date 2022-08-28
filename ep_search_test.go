@@ -3,14 +3,18 @@ package simplejson_test
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"io"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 )
 
 func TestSearch(t *testing.T) {
-	serverRunning(t)
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodPost, "", nil)
 
-	body, err := call(Port, "/search", http.MethodPost, "")
-	require.NoError(t, err)
-	assert.Equal(t, `["A","B","C"]`, body)
+	s.Search(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+	body, _ := io.ReadAll(w.Body)
+	assert.Equal(t, `["A","B","C"]`, string(body))
 }

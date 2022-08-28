@@ -20,7 +20,7 @@ var queryFailure = promauto.NewCounterVec(prometheus.CounterOpts{
 	Help: "Grafana SimpleJSON server count of failed requests",
 }, []string{"app", "type", "target"})
 
-func (s *Server) query(w http.ResponseWriter, req *http.Request) {
+func (s *Server) Query(w http.ResponseWriter, req *http.Request) {
 	var request query.Request
 	handleEndpoint(w, req, &request, func() ([]json.Marshaler, error) {
 		return s.handleQuery(req.Context(), request)

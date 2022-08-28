@@ -1,7 +1,6 @@
 package simplejson_test
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"flag"
@@ -14,28 +13,23 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"os"
 	"testing"
 	"time"
 )
 
 var (
-	Port   int
 	update = flag.Bool("update", false, "update .golden files")
-	s      = simplejson.Server{
-		Handlers: handlers}
+	s      = simplejson.Server{Handlers: handlers}
 )
 
-func TestMain(m *testing.M) {
+func TestServer_Metrics(t *testing.T) {
 	listener, err := net.Listen("tcp4", ":0")
 	if err != nil {
 		panic(err)
 	}
-	Port = listener.Addr().(*net.TCPAddr).Port
+	target := fmt.Sprintf("http://127.0.0.1:%d/metrics", listener.Addr().(*net.TCPAddr).Port)
 
-	httpServer := http.Server{
-		Handler: s.GetRouter(),
-	}
+	httpServer := http.Server{Handler: s.GetRouter()}
 	go func() {
 		err2 := httpServer.Serve(listener)
 		if !errors.Is(err2, http.ErrServerClosed) {
@@ -43,7 +37,29 @@ func TestMain(m *testing.M) {
 		}
 	}()
 
-	rc := m.Run()
+	var resp *http.Response
+	require.Eventually(t, func() bool {
+		resp, err = http.Post(target, "", nil)
+		if err != nil {
+			return false
+		}
+		_ = resp.Body.Close()
+		return resp.StatusCode == http.StatusOK
+
+	}, time.Second, 10*time.Millisecond)
+
+	resp, err = http.Get(target)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var body []byte
+	body, err = io.ReadAll(resp.Body)
+	_ = resp.Body.Close()
+
+	require.NoError(t, err)
+	assert.Contains(t, string(body), "http_duration_seconds")
+	assert.Contains(t, string(body), "http_duration_seconds_sum")
+	assert.Contains(t, string(body), "http_duration_seconds_count")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	err = s.Shutdown(ctx, time.Second)
@@ -51,54 +67,6 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 	cancel()
-
-	os.Exit(rc)
-}
-
-func TestServer_Metrics(t *testing.T) {
-	serverRunning(t)
-
-	body, err := call(Port, "/metrics", http.MethodGet, "")
-	require.NoError(t, err)
-	assert.Contains(t, body, "http_duration_seconds")
-	assert.Contains(t, body, "http_duration_seconds_sum")
-	assert.Contains(t, body, "http_duration_seconds_count")
-}
-
-func serverRunning(t *testing.T) {
-	require.Eventually(t, func() bool {
-		body, err := call(Port, "/", http.MethodGet, "")
-		return err == nil && body == ""
-	}, 500*time.Millisecond, 10*time.Millisecond)
-}
-
-func call(port int, path, method, body string) (response string, err error) {
-	url := fmt.Sprintf("http://127.0.0.1:%d%s", port, path)
-	client := &http.Client{}
-	reqBody := bytes.NewBuffer([]byte(body))
-	req, _ := http.NewRequest(method, url, reqBody)
-
-	var resp *http.Response
-	resp, err = client.Do(req)
-
-	if err != nil {
-		return
-	}
-
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("call failed: %s", resp.Status)
-	}
-
-	var buff []byte
-	if buff, err = io.ReadAll(resp.Body); err == nil {
-		response = string(buff)
-	}
-
-	return
 }
 
 //

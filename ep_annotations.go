@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-func (s *Server) annotations(w http.ResponseWriter, req *http.Request) {
+func (s *Server) Annotations(w http.ResponseWriter, req *http.Request) {
 	if req.Method == http.MethodOptions {
 		w.Header().Set("Access-Control-Allow-Headers", "accept, content-type")
 		w.Header().Set("Access-Control-Allow-Methods", "POST")
