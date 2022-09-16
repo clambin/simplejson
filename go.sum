@@ -157,8 +157,8 @@ github.com/googleapis/gax-go/v2 v2.0.4/go.mod h1:0Wqv26UfaUD9n4G6kQubkQ+KchISgw+
 github.com/googleapis/gax-go/v2 v2.0.5/go.mod h1:DWXyrwAJ9X0FpwwEdw+IPEYBICEFu5mhpdKc/us6bOk=
 github.com/gorilla/mux v1.8.0 h1:i40aqfkR1h2SlN9hojwV5ZA91wcXFOvkdNIeFDP5koI=
 github.com/gorilla/mux v1.8.0/go.mod h1:DVbg23sWSpFRCP0SfiEN6jmj59UnW/n46BH5rLB71So=
-github.com/grafana/grafana-plugin-sdk-go v0.139.0 h1:2RQKM2QpSaWTtaGN6sK+R7LO7zykOeTYF0QkAMA7JsI=
-github.com/grafana/grafana-plugin-sdk-go v0.139.0/go.mod h1:Y+Ps2sesZ62AyCnX+hzrYnyDQYe/ZZl+A8yKLOBm12c=
+github.com/grafana/grafana-plugin-sdk-go v0.140.0 h1:cxU8M99Z/V4FJNyseJrR8x509fSttJAoV+GWVL6ZdRY=
+github.com/grafana/grafana-plugin-sdk-go v0.140.0/go.mod h1:srvRQ+de4C5h7FqA5lSFUkFCs5pJolWT+PGV2AyBOFk=
 github.com/grpc-ecosystem/grpc-gateway v1.16.0/go.mod h1:BDjrQk3hbvj6Nolgz8mAMFbcEtjT1g+wF4CSlocrBnw=
 github.com/hashicorp/golang-lru v0.5.0/go.mod h1:/m3WP610KZHVQ1SGc6re/UDhFvYD7pJ4Ao+sR/qLZy8=
 github.com/hashicorp/golang-lru v0.5.1/go.mod h1:/m3WP610KZHVQ1SGc6re/UDhFvYD7pJ4Ao+sR/qLZy8=
