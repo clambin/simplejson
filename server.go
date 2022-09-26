@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"sort"
+	"sync"
 	"time"
 )
 
@@ -16,6 +17,7 @@ type Server struct {
 	Name       string
 	Handlers   map[string]Handler
 	HTTPServer *http.Server
+	lock       sync.RWMutex
 }
 
 // Run starts the SimpleJSon Server.
@@ -25,20 +27,32 @@ func (s *Server) Run(port int) error {
 		return err
 	}
 
+	s.lock.Lock()
 	s.HTTPServer = &http.Server{
 		Handler: s.GetRouter(),
 	}
+	s.lock.Unlock()
 	return s.HTTPServer.Serve(listener)
 }
 
 // Shutdown stops a running Server.
 func (s *Server) Shutdown(ctx context.Context, timeout time.Duration) (err error) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
 	if s.HTTPServer != nil {
 		newCtx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
 		err = s.HTTPServer.Shutdown(newCtx)
 	}
 	return
+}
+
+// Running returns true if the HTTP Server is running
+func (s *Server) Running() bool {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	return s.HTTPServer != nil
 }
 
 // GetRouter sets up an HTTP router with the requested SimpleJSON endpoints

@@ -34,8 +34,9 @@ func TestServer_Run_Shutdown(t *testing.T) {
 		wg.Done()
 	}()
 
-	// FIXME: race condition between Run setting HTTPServer and code below using it
-	time.Sleep(time.Second)
+	assert.Eventually(t, func() bool {
+		return srv.Running()
+	}, time.Second, 100*time.Millisecond)
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest(http.MethodPost, "/", nil)
