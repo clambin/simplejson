@@ -3,7 +3,7 @@ module github.com/clambin/simplejson/v3
 go 1.18
 
 require (
-	github.com/clambin/go-metrics v0.5.1
+	github.com/clambin/go-metrics v0.6.0
 	github.com/gorilla/mux v1.8.0
 	github.com/grafana/grafana-plugin-sdk-go v0.140.0
 	github.com/prometheus/client_golang v1.13.0

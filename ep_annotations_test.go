@@ -30,6 +30,7 @@ func TestServer_Annotations(t *testing.T) {
 	s.Annotations(w, req)
 	require.Equal(t, http.StatusOK, w.Code)
 	body, err := io.ReadAll(w.Body)
+	require.NoError(t, err)
 
 	gp := filepath.Join("testdata", t.Name()+".golden")
 	if *update {

@@ -7,6 +7,7 @@ import (
 	"github.com/clambin/simplejson/v3"
 	"github.com/clambin/simplejson/v3/annotation"
 	"github.com/clambin/simplejson/v3/query"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"time"
@@ -18,6 +19,14 @@ func main() {
 		"B": &handler{table: true},
 		"C": &annoHandler{},
 	}}
+
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		err := http.ListenAndServe(":9090", nil)
+		if !errors.Is(err, http.ErrServerClosed) {
+			panic(err)
+		}
+	}()
 
 	log.SetLevel(log.DebugLevel)
 	err := s.Run(8080)

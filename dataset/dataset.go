@@ -35,15 +35,13 @@ func (d *Dataset) Add(timestamp time.Time, column string, value float64) {
 }
 
 func (d *Dataset) ensureColumnExists(column string) {
-	_, added := d.columns.Add(column)
-	if !added {
+	if _, added := d.columns.Add(column); !added {
 		return
 	}
 
 	// new column. add data for the new column to each row
 	for key, entry := range d.data {
-		entry = append(entry, 0)
-		d.data[key] = entry
+		d.data[key] = append(entry, 0)
 	}
 }
 

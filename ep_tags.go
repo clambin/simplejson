@@ -24,10 +24,9 @@ func (r *valueKey) UnmarshalJSON(b []byte) (err error) {
 	type valueKey2 valueKey
 	var c valueKey2
 	err = json.Unmarshal(b, &c)
-	if err != nil {
-		return
+	if err == nil {
+		*r = valueKey(c)
 	}
-	*r = valueKey(c)
 	return nil
 }
 

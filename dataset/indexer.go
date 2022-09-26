@@ -27,13 +27,13 @@ func MakeIndexer[T ordered]() *Indexer[T] {
 }
 
 // GetIndex returns the index of a value (i.e. when that value was added)
-func (idx Indexer[T]) GetIndex(value T) (index int, found bool) {
+func (idx *Indexer[T]) GetIndex(value T) (index int, found bool) {
 	index, found = idx.indices[value]
 	return
 }
 
 // Count returns the number of values in the Indexer
-func (idx Indexer[T]) Count() int {
+func (idx *Indexer[T]) Count() int {
 	return len(idx.values)
 }
 
@@ -47,15 +47,13 @@ func (idx *Indexer[T]) List() (values []T) {
 }
 
 // Add adds a new value to the Indexer. It returns the index of that value and whether the value was actually added.
-func (idx *Indexer[T]) Add(value T) (index int, added bool) {
-	var found bool
-	index, found = idx.indices[value]
+func (idx *Indexer[T]) Add(value T) (int, bool) {
+	index, found := idx.indices[value]
 
 	if found {
 		return index, false
 	}
 
-	added = true
 	index = len(idx.values)
 	idx.indices[value] = index
 
@@ -63,11 +61,11 @@ func (idx *Indexer[T]) Add(value T) (index int, added bool) {
 		idx.inOrder = !isLessThan(value, idx.values[index-1])
 	}
 	idx.values = append(idx.values, value)
-	return
+	return index, true
 }
 
 // Copy returns a copy of the Indexer
-func (idx Indexer[T]) Copy() (clone *Indexer[T]) {
+func (idx *Indexer[T]) Copy() (clone *Indexer[T]) {
 	clone = &Indexer[T]{
 		values:  make([]T, len(idx.values)),
 		indices: make(map[T]int),

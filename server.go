@@ -3,8 +3,9 @@ package simplejson
 import (
 	"context"
 	"fmt"
-	"github.com/clambin/go-metrics/server"
+	"github.com/clambin/go-metrics/server/middleware"
 	"github.com/gorilla/mux"
+	"net"
 	"net/http"
 	"sort"
 	"time"
@@ -14,31 +15,36 @@ import (
 type Server struct {
 	Name       string
 	Handlers   map[string]Handler
-	httpServer *http.Server
+	HTTPServer *http.Server
 }
 
 // Run starts the SimpleJSon Server.
 func (s *Server) Run(port int) error {
-	s.httpServer = &http.Server{
-		Addr:    fmt.Sprintf(":%d", port),
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	if err != nil {
+		return err
+	}
+
+	s.HTTPServer = &http.Server{
 		Handler: s.GetRouter(),
 	}
-	return s.httpServer.ListenAndServe()
+	return s.HTTPServer.Serve(listener)
 }
 
 // Shutdown stops a running Server.
 func (s *Server) Shutdown(ctx context.Context, timeout time.Duration) (err error) {
-	if s.httpServer != nil {
+	if s.HTTPServer != nil {
 		newCtx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
-		err = s.httpServer.Shutdown(newCtx)
+		err = s.HTTPServer.Shutdown(newCtx)
 	}
 	return
 }
 
-// GetRouter sets up an HTTP router. Useful if you want to hook other handlers to the HTTP Server.
+// GetRouter sets up an HTTP router with the requested SimpleJSON endpoints
 func (s *Server) GetRouter() (r *mux.Router) {
-	r = server.GetRouter()
+	r = mux.NewRouter()
+	r.Use(middleware.HTTPMetrics)
 	r.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})

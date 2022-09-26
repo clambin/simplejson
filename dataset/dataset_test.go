@@ -213,7 +213,7 @@ func BenchmarkDataset_AddColumn(b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		d.AddColumn("B", func(values map[string]float64) float64 {
+		d.AddColumn("B", func(_ map[string]float64) float64 {
 			return 1
 		})
 	}

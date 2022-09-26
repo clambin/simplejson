@@ -8,11 +8,13 @@ import (
 	"github.com/clambin/simplejson/v3"
 	"github.com/clambin/simplejson/v3/annotation"
 	"github.com/clambin/simplejson/v3/query"
+	"github.com/prometheus/client_golang/prometheus"
+	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"io"
-	"net"
 	"net/http"
+	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 )
@@ -22,51 +24,52 @@ var (
 	s      = simplejson.Server{Handlers: handlers}
 )
 
-func TestServer_Metrics(t *testing.T) {
-	listener, err := net.Listen("tcp4", ":0")
-	if err != nil {
-		panic(err)
-	}
-	target := fmt.Sprintf("http://127.0.0.1:%d/metrics", listener.Addr().(*net.TCPAddr).Port)
-
-	httpServer := http.Server{Handler: s.GetRouter()}
+func TestServer_Run_Shutdown(t *testing.T) {
+	wg := sync.WaitGroup{}
+	srv := simplejson.Server{Handlers: handlers}
+	wg.Add(1)
 	go func() {
-		err2 := httpServer.Serve(listener)
-		if !errors.Is(err2, http.ErrServerClosed) {
-			panic(err2)
-		}
+		err := srv.Run(0)
+		require.True(t, errors.Is(err, http.ErrServerClosed))
+		wg.Done()
 	}()
 
-	var resp *http.Response
-	require.Eventually(t, func() bool {
-		resp, err = http.Post(target, "", nil)
-		if err != nil {
-			return false
-		}
-		_ = resp.Body.Close()
-		return resp.StatusCode == http.StatusOK
+	// FIXME: race condition between Run setting HTTPServer and code below using it
+	time.Sleep(time.Second)
 
-	}, time.Second, 10*time.Millisecond)
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodPost, "/", nil)
+	srv.HTTPServer.Handler.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
 
-	resp, err = http.Get(target)
-	require.NoError(t, err)
-	require.Equal(t, http.StatusOK, resp.StatusCode)
-
-	var body []byte
-	body, err = io.ReadAll(resp.Body)
-	_ = resp.Body.Close()
-
-	require.NoError(t, err)
-	assert.Contains(t, string(body), "http_duration_seconds")
-	assert.Contains(t, string(body), "http_duration_seconds_sum")
-	assert.Contains(t, string(body), "http_duration_seconds_count")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	err = s.Shutdown(ctx, time.Second)
-	if err != nil {
+	if err := srv.Shutdown(context.Background(), 5*time.Second); err != nil {
 		panic(err)
 	}
-	cancel()
+	wg.Wait()
+}
+
+func TestServer_Metrics(t *testing.T) {
+	r := s.GetRouter()
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodPost, "/", nil)
+	r.ServeHTTP(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code)
+
+	m, err := prometheus.DefaultGatherer.Gather()
+	require.NoError(t, err)
+	var found bool
+	for _, entry := range m {
+		if *entry.Name == "http_duration_seconds" {
+			require.Equal(t, io_prometheus_client.MetricType_SUMMARY, *entry.Type)
+			require.Len(t, entry.Metric, 1)
+			assert.NotZero(t, entry.Metric[0].Summary.GetSampleCount())
+			found = true
+			break
+		}
+	}
+	assert.True(t, found)
 }
 
 //
