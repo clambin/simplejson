@@ -9,7 +9,7 @@ import (
 	"github.com/clambin/simplejson/v3/annotation"
 	"github.com/clambin/simplejson/v3/query"
 	"github.com/prometheus/client_golang/prometheus"
-	io_prometheus_client "github.com/prometheus/client_model/go"
+	pcg "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"net/http"
@@ -39,7 +39,7 @@ func TestServer_Run_Shutdown(t *testing.T) {
 	}, time.Second, 100*time.Millisecond)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodPost, "/", nil)
+	req, _ := http.NewRequest(http.MethodPost, "/search", nil)
 	srv.HTTPServer.Handler.ServeHTTP(w, req)
 	require.Equal(t, http.StatusOK, w.Code)
 
@@ -62,9 +62,9 @@ func TestServer_Metrics(t *testing.T) {
 	require.NoError(t, err)
 	var found bool
 	for _, entry := range m {
-		if *entry.Name == "http_duration_seconds" {
-			require.Equal(t, io_prometheus_client.MetricType_SUMMARY, *entry.Type)
-			require.Len(t, entry.Metric, 1)
+		if *entry.Name == "simplejson_request_duration_seconds" {
+			require.Equal(t, pcg.MetricType_SUMMARY, *entry.Type)
+			require.NotZero(t, entry.Metric)
 			assert.NotZero(t, entry.Metric[0].Summary.GetSampleCount())
 			found = true
 			break

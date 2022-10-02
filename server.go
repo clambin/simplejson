@@ -3,11 +3,12 @@ package simplejson
 import (
 	"context"
 	"fmt"
-	"github.com/clambin/go-metrics/server/middleware"
-	"github.com/gorilla/mux"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"net"
 	"net/http"
 	"sort"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -55,21 +56,6 @@ func (s *Server) Running() bool {
 	return s.HTTPServer != nil
 }
 
-// GetRouter sets up an HTTP router with the requested SimpleJSON endpoints
-func (s *Server) GetRouter() (r *mux.Router) {
-	r = mux.NewRouter()
-	r.Use(middleware.HTTPMetrics)
-	r.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
-	r.HandleFunc("/search", s.Search).Methods(http.MethodPost)
-	r.HandleFunc("/query", s.Query).Methods(http.MethodPost)
-	r.HandleFunc("/annotations", s.Annotations).Methods(http.MethodPost, http.MethodOptions)
-	r.HandleFunc("/tag-keys", s.TagKeys).Methods(http.MethodPost)
-	r.HandleFunc("/tag-values", s.TagValues).Methods(http.MethodPost)
-	return
-}
-
 // Targets returns a sorted list of supported targets
 func (s *Server) Targets() (targets []string) {
 	for target := range s.Handlers {
@@ -77,4 +63,81 @@ func (s *Server) Targets() (targets []string) {
 	}
 	sort.Strings(targets)
 	return
+}
+
+// GetRouter sets up an HTTP router with the requested SimpleJSON endpoints
+func (s *Server) GetRouter() (m *http.ServeMux) {
+	m = http.NewServeMux()
+	m.Handle("/", httpMetrics(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})))
+
+	m.Handle("/search", httpMetrics(methodFilter(s.Search, http.MethodPost)))
+	m.Handle("/query", httpMetrics(methodFilter(s.Query, http.MethodPost)))
+	m.Handle("/annotations", httpMetrics(methodFilter(s.Annotations, http.MethodPost, http.MethodOptions)))
+	m.Handle("/tag-keys", httpMetrics(methodFilter(s.TagKeys, http.MethodPost)))
+	m.Handle("/tag-values", httpMetrics(methodFilter(s.TagValues, http.MethodPost)))
+	return
+}
+
+func methodFilter(next func(w http.ResponseWriter, r *http.Request), methods ...string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !isValidMethod(r.Method, methods) {
+			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+			return
+		}
+		next(w, r)
+	})
+}
+
+func isValidMethod(method string, methods []string) bool {
+	for _, m := range methods {
+		if m == method {
+			return true
+		}
+	}
+	return false
+}
+
+func httpMetrics(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		lrw := &loggingResponseWriter{
+			responseWriter: w,
+			statusCode:     http.StatusOK, // if the handler doesn't call WriteHeader(), default to HTTP 200
+		}
+		start := time.Now()
+		next.ServeHTTP(lrw, r)
+		httpDuration.WithLabelValues(r.URL.Path, r.Method, strconv.Itoa(lrw.statusCode)).Observe(time.Since(start).Seconds())
+	})
+}
+
+// HTTPMetrics metrics
+var (
+	httpDuration = promauto.NewSummaryVec(prometheus.SummaryOpts{
+		Name: "simplejson_request_duration_seconds",
+		Help: "Duration of HTTP requests",
+	}, []string{"path", "method", "status_code"})
+)
+
+// loggingResponseWriter records the HTTP status code of a ResponseWriter, so we can use it to log response times for
+// individual status codes.
+type loggingResponseWriter struct {
+	responseWriter http.ResponseWriter
+	statusCode     int
+}
+
+// WriteHeader implements the http.ResponseWriter interface.
+func (w *loggingResponseWriter) WriteHeader(code int) {
+	w.statusCode = code
+	w.responseWriter.WriteHeader(code)
+}
+
+// Write implements the http.ResponseWriter interface.
+func (w *loggingResponseWriter) Write(body []byte) (int, error) {
+	return w.responseWriter.Write(body)
+}
+
+// Header implements the http.ResponseWriter interface
+func (w *loggingResponseWriter) Header() http.Header {
+	return w.responseWriter.Header()
 }

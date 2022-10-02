@@ -3,10 +3,9 @@ module github.com/clambin/simplejson/v3
 go 1.18
 
 require (
-	github.com/clambin/go-metrics v0.6.0
-	github.com/gorilla/mux v1.8.0
 	github.com/grafana/grafana-plugin-sdk-go v0.140.0
 	github.com/prometheus/client_golang v1.13.0
+	github.com/prometheus/client_model v0.2.0
 	github.com/sirupsen/logrus v1.9.0
 	github.com/stretchr/testify v1.8.0
 )
@@ -31,7 +30,6 @@ require (
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/pierrec/lz4/v4 v4.1.8 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
 	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
