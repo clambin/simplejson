@@ -1,6 +1,7 @@
 package data
 
 import (
+	"github.com/clambin/simplejson/v3/pkg/set"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 	"time"
 )
@@ -104,4 +105,16 @@ func getFieldValues[T any](f *data.Field) (values []T) {
 		values[i] = f.At(i).(T)
 	}
 	return
+}
+
+// DeleteColumn returns a table with the listed columns removed
+func (t Table) DeleteColumn(columns ...string) *Table {
+	fields := make([]*data.Field, 0, len(t.Frame.Fields))
+	s := set.Create(columns)
+	for _, field := range t.Frame.Fields {
+		if !s.Has(field.Name) {
+			fields = append(fields, field)
+		}
+	}
+	return &Table{Frame: data.NewFrame(t.Frame.Name, fields...)}
 }
