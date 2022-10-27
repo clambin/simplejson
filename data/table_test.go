@@ -101,6 +101,22 @@ func TestTable_GetStringValues(t *testing.T) {
 	assert.False(t, found)
 }
 
+func TestTable_DeleteColumn(t *testing.T) {
+	table := createTable(10)
+
+	table = table.DeleteColumn("labels")
+	assert.Equal(t, []string{"time", "values", ""}, table.GetColumns())
+
+	table = table.DeleteColumn("labels")
+	assert.Equal(t, []string{"time", "values", ""}, table.GetColumns())
+
+	table = table.DeleteColumn("time")
+	assert.Equal(t, []string{"values", ""}, table.GetColumns())
+
+	table = table.DeleteColumn("values", "")
+	assert.Empty(t, table.GetColumns())
+}
+
 func createTable(rows int) *data.Table {
 	var timestamps []time.Time
 	var values []float64
