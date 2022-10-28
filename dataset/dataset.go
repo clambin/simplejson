@@ -7,6 +7,8 @@ import (
 
 // Dataset is a convenience data structure to construct a SimpleJSON table response. Use this when you're adding
 // data for a range of (possibly out of order) timestamps.
+//
+// Deprecated: use data.Table instead
 type Dataset struct {
 	data       [][]float64
 	timestamps *Indexer[time.Time]

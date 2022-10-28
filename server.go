@@ -3,6 +3,9 @@ package simplejson
 import (
 	"context"
 	"fmt"
+	"github.com/clambin/simplejson/v3/annotation"
+	"github.com/clambin/simplejson/v3/pkg/middleware"
+	"github.com/clambin/simplejson/v3/query"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"net"
@@ -65,50 +68,19 @@ func (s *Server) Targets() (targets []string) {
 	return
 }
 
-// GetRouter sets up an HTTP router with the requested SimpleJSON endpoints
+// GetRouter sets up an HTTP router for the SimpleJSON endpoints
 func (s *Server) GetRouter() (m *http.ServeMux) {
 	m = http.NewServeMux()
-	m.Handle("/", httpMetrics(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	m.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
-	})))
+	}))
 
-	m.Handle("/search", httpMetrics(methodFilter(s.Search, http.MethodPost)))
-	m.Handle("/query", httpMetrics(methodFilter(s.Query, http.MethodPost)))
-	m.Handle("/annotations", httpMetrics(methodFilter(s.Annotations, http.MethodPost, http.MethodOptions)))
-	m.Handle("/tag-keys", httpMetrics(methodFilter(s.TagKeys, http.MethodPost)))
-	m.Handle("/tag-values", httpMetrics(methodFilter(s.TagValues, http.MethodPost)))
+	m.Handle("/search", middlewareChain(s.Search, http.MethodPost))
+	m.Handle("/query", middlewareChain(s.Query, http.MethodPost))
+	m.Handle("/annotations", middlewareChain(s.Annotations, http.MethodPost, http.MethodOptions))
+	m.Handle("/tag-keys", middlewareChain(s.TagKeys, http.MethodPost))
+	m.Handle("/tag-values", middlewareChain(s.TagValues, http.MethodPost))
 	return
-}
-
-func methodFilter(next func(w http.ResponseWriter, r *http.Request), methods ...string) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !isValidMethod(r.Method, methods) {
-			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
-			return
-		}
-		next(w, r)
-	})
-}
-
-func isValidMethod(method string, methods []string) bool {
-	for _, m := range methods {
-		if m == method {
-			return true
-		}
-	}
-	return false
-}
-
-func httpMetrics(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		lrw := &loggingResponseWriter{
-			responseWriter: w,
-			statusCode:     http.StatusOK, // if the handler doesn't call WriteHeader(), default to HTTP 200
-		}
-		start := time.Now()
-		next.ServeHTTP(lrw, r)
-		httpDuration.WithLabelValues(r.URL.Path, r.Method, strconv.Itoa(lrw.statusCode)).Observe(time.Since(start).Seconds())
-	})
 }
 
 // HTTPMetrics metrics
@@ -119,25 +91,36 @@ var (
 	}, []string{"path", "method", "status_code"})
 )
 
-// loggingResponseWriter records the HTTP status code of a ResponseWriter, so we can use it to log response times for
-// individual status codes.
-type loggingResponseWriter struct {
-	responseWriter http.ResponseWriter
-	statusCode     int
+func middlewareChain(next http.HandlerFunc, methods ...string) http.Handler {
+	return middleware.HTTPMetrics(
+		middleware.HandleForMethods(next, methods...),
+		func(path, method string, statusCode int, duration time.Duration) {
+			httpDuration.WithLabelValues(path, method, strconv.Itoa(statusCode)).Observe(duration.Seconds())
+		})
 }
 
-// WriteHeader implements the http.ResponseWriter interface.
-func (w *loggingResponseWriter) WriteHeader(code int) {
-	w.statusCode = code
-	w.responseWriter.WriteHeader(code)
+// Handler implements the different Grafana SimpleJSON endpoints.  The interface only contains a single Endpoints() function,
+// so that a handler only has to implement the endpoint functions (query, annotation, etc.) that it needs.
+type Handler interface {
+	Endpoints() Endpoints
 }
 
-// Write implements the http.ResponseWriter interface.
-func (w *loggingResponseWriter) Write(body []byte) (int, error) {
-	return w.responseWriter.Write(body)
+// Endpoints contains the functions that implement each of the SimpleJson endpoints
+type Endpoints struct {
+	Query       QueryFunc       // /query endpoint: handles queries
+	Annotations AnnotationsFunc // /annotation endpoint: handles requests for annotation
+	TagKeys     TagKeysFunc     // /tag-keys endpoint: returns all supported tag names
+	TagValues   TagValuesFunc   // /tag-values endpoint: returns all supported values for the specified tag name
 }
 
-// Header implements the http.ResponseWriter interface
-func (w *loggingResponseWriter) Header() http.Header {
-	return w.responseWriter.Header()
-}
+// QueryFunc handles queries
+type QueryFunc func(ctx context.Context, req query.Request) (query.Response, error)
+
+// AnnotationsFunc handles requests for annotation
+type AnnotationsFunc func(req annotation.Request) ([]annotation.Annotation, error)
+
+// TagKeysFunc returns supported tag names
+type TagKeysFunc func(ctx context.Context) []string
+
+// TagValuesFunc returns supported values for the specified tag name
+type TagValuesFunc func(ctx context.Context, key string) ([]string, error)

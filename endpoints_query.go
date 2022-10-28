@@ -7,25 +7,19 @@ import (
 	"github.com/clambin/simplejson/v3/query"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"net/http"
 )
 
-var queryDuration = promauto.NewSummaryVec(prometheus.SummaryOpts{
-	Name: prometheus.BuildFQName("simplejson", "query", "duration_seconds"),
-	Help: "Grafana SimpleJSON server duration of query requests by target",
-}, []string{"app", "type", "target"})
+var (
+	queryDuration = promauto.NewSummaryVec(prometheus.SummaryOpts{
+		Name: prometheus.BuildFQName("simplejson", "query", "duration_seconds"),
+		Help: "Grafana SimpleJSON server duration of query requests by target",
+	}, []string{"app", "type", "target"})
 
-var queryFailure = promauto.NewCounterVec(prometheus.CounterOpts{
-	Name: prometheus.BuildFQName("simplejson", "query", "failed_count"),
-	Help: "Grafana SimpleJSON server count of failed requests",
-}, []string{"app", "type", "target"})
-
-func (s *Server) Query(w http.ResponseWriter, req *http.Request) {
-	var request query.Request
-	handleEndpoint(w, req, &request, func() ([]json.Marshaler, error) {
-		return s.handleQuery(req.Context(), request)
-	})
-}
+	queryFailure = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: prometheus.BuildFQName("simplejson", "query", "failed_count"),
+		Help: "Grafana SimpleJSON server count of failed requests",
+	}, []string{"app", "type", "target"})
+)
 
 func (s *Server) handleQuery(ctx context.Context, request query.Request) (responses []json.Marshaler, err error) {
 	responses = make([]json.Marshaler, len(request.Targets))
@@ -47,15 +41,13 @@ func (s *Server) handleQuery(ctx context.Context, request query.Request) (respon
 
 func (s *Server) handleQueryRequest(ctx context.Context, target query.Target, request query.Request) (query.Response, error) {
 	handler, ok := s.Handlers[target.Name]
-
 	if !ok {
 		return nil, fmt.Errorf("no handler found for target '%s'", target)
 	}
 
 	q := handler.Endpoints().Query
-
 	if q == nil {
-		return nil, fmt.Errorf("timeseries query not implemented for target '%s'", target)
+		return nil, fmt.Errorf("query not implemented for target '%s'", target)
 	}
 
 	return q(ctx, request)

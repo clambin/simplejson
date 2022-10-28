@@ -22,7 +22,7 @@ func Example() {
 
 type handler struct{ table bool }
 
-func (h handler) Endpoints() simplejson.Endpoints {
+func (h *handler) Endpoints() simplejson.Endpoints {
 	return simplejson.Endpoints{
 		Query:       h.Query,
 		Annotations: h.Annotations,
@@ -31,14 +31,14 @@ func (h handler) Endpoints() simplejson.Endpoints {
 	}
 }
 
-func (h *handler) Query(ctx context.Context, req query.Request) (response query.Response, err error) {
+func (h *handler) Query(ctx context.Context, req query.Request) (query.Response, error) {
 	if h.table == false {
 		return h.timeSeriesQuery(ctx, req)
 	}
 	return h.tableQuery(ctx, req)
 }
 
-func (h *handler) timeSeriesQuery(_ context.Context, _ query.Request) (response *query.TimeSeriesResponse, err error) {
+func (h *handler) timeSeriesQuery(_ context.Context, _ query.Request) (*query.TimeSeriesResponse, error) {
 	dataPoints := make([]query.DataPoint, 60)
 	timestamp := time.Now().Add(-1 * time.Hour)
 	for i := 0; i < 60; i++ {
@@ -54,7 +54,7 @@ func (h *handler) timeSeriesQuery(_ context.Context, _ query.Request) (response 
 	}, nil
 }
 
-func (h *handler) tableQuery(_ context.Context, _ query.Request) (response *query.TableResponse, err error) {
+func (h *handler) tableQuery(_ context.Context, _ query.Request) (*query.TableResponse, error) {
 	timestamps := make(query.TimeColumn, 60)
 	seriesA := make(query.NumberColumn, 60)
 	seriesB := make(query.NumberColumn, 60)
@@ -76,21 +76,19 @@ func (h *handler) tableQuery(_ context.Context, _ query.Request) (response *quer
 	}, nil
 }
 
-func (h *handler) Annotations(_ annotation.Request) (annotations []annotation.Annotation, err error) {
-	annotations = append(annotations, annotation.Annotation{
+func (h *handler) Annotations(_ annotation.Request) ([]annotation.Annotation, error) {
+	return []annotation.Annotation{{
 		Time:  time.Now().Add(-5 * time.Minute),
 		Title: "foo",
 		Text:  "bar",
-	})
-
-	return
+	}}, nil
 }
 
-func (h *handler) TagKeys(_ context.Context) (keys []string) {
+func (h *handler) TagKeys(_ context.Context) []string {
 	return []string{"some-key"}
 }
 
-func (h *handler) TagValues(_ context.Context, key string) (values []string, err error) {
+func (h *handler) TagValues(_ context.Context, key string) ([]string, error) {
 	if key != "some-key" {
 		return nil, fmt.Errorf("invalid key: %s", key)
 	}

@@ -19,10 +19,7 @@ import (
 	"time"
 )
 
-var (
-	update = flag.Bool("update", false, "update .golden files")
-	s      = simplejson.Server{Handlers: handlers}
-)
+var update = flag.Bool("update", false, "update .golden files")
 
 func TestServer_Run_Shutdown(t *testing.T) {
 	wg := sync.WaitGroup{}
@@ -151,6 +148,8 @@ var (
 			queryResponse: tableQueryResponse["C"],
 		},
 	}
+
+	s = simplejson.Server{Handlers: handlers}
 )
 
 func (handler *testHandler) Endpoints() (endpoints simplejson.Endpoints) {

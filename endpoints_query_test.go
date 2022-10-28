@@ -68,31 +68,33 @@ func TestServer_Query(t *testing.T) {
 	}
 
 	for _, tt := range testCases {
-		w := httptest.NewRecorder()
-		req, _ := http.NewRequest(http.MethodPost, "", bytes.NewBufferString(tt.request))
+		t.Run(tt.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			req, _ := http.NewRequest(http.MethodPost, "", bytes.NewBufferString(tt.request))
 
-		s.Query(w, req)
-		require.Equal(t, tt.code, w.Code)
+			s.Query(w, req)
+			require.Equal(t, tt.code, w.Code)
 
-		if !tt.pass {
-			continue
-		}
+			if !tt.pass {
+				return
+			}
 
-		body, err := io.ReadAll(w.Body)
-		require.NoError(t, err, tt.name)
+			body, err := io.ReadAll(w.Body)
+			require.NoError(t, err)
 
-		gp := filepath.Join("testdata", strings.ToLower(t.Name())+"_"+tt.name+".golden")
-		if *update {
-			t.Logf("updating golden file for %s", t.Name())
-			err = os.WriteFile(gp, body, 0644)
-			require.NoError(t, err, "failed to update golden file", tt.name)
-		}
+			gp := strings.ToLower(filepath.Join("testdata", t.Name()+".golden"))
+			if *update {
+				t.Logf("updating golden file for %s", t.Name())
+				err = os.WriteFile(gp, body, 0644)
+				require.NoError(t, err, "failed to update golden file")
+			}
 
-		var golden []byte
-		golden, err = os.ReadFile(gp)
-		require.NoError(t, err, tt.name)
+			var golden []byte
+			golden, err = os.ReadFile(gp)
+			require.NoError(t, err)
 
-		assert.Equal(t, string(golden), string(body), tt.name)
+			assert.Equal(t, string(golden), string(body))
+		})
 	}
 }
 
