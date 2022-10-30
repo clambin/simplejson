@@ -57,10 +57,8 @@ github.com/cheekybits/genny v1.0.0/go.mod h1:+tQajlRqAUrPI7DOSpB0XAqZYtQakVtB7wX
 github.com/chzyer/logex v1.1.10/go.mod h1:+Ywpsq7O8HXn0nuIou7OrIPyXbp3wmkHB+jjWRnGsAI=
 github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e/go.mod h1:nSuG5e5PlCu98SY8svDHJxuZscDgtXS6KTTbou5AhLI=
 github.com/chzyer/test v0.0.0-20180213035817-a1ea475d72b1/go.mod h1:Q3SI9o4m/ZMnBNeIyt5eFwwo7qiLfzFZmjNmxjkiQlU=
-github.com/clambin/go-metrics v0.6.1 h1:S1pw2YdBxf3HggGlOOsq+rvvMKrwbgncSIxRONabUWc=
-github.com/clambin/go-metrics v0.6.1/go.mod h1:g8ttsd8Vm0qzz/NE/8v/vb57Ik6Q8AuQHqjOAyFB/h4=
-github.com/clambin/go-metrics v0.6.2 h1:mjk+3OvqxTPGoZ1RHtm3w3zT39BlQUtBBRi02sNdplM=
-github.com/clambin/go-metrics v0.6.2/go.mod h1:6XBV5IpnL9N4xGV50i6eo7AB5mPcLb7XUtTtv3wD7qE=
+github.com/clambin/go-metrics v0.6.3 h1:awuonTV7BCr0xYoVVkuS1W0HQblzZ/1AiIj9RUO1Ruk=
+github.com/clambin/go-metrics v0.6.3/go.mod h1:6XBV5IpnL9N4xGV50i6eo7AB5mPcLb7XUtTtv3wD7qE=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
 github.com/cncf/udpa/go v0.0.0-20191209042840-269d4d468f6f/go.mod h1:M8M6+tZqaGXZJjfX53e64911xZQV5JYwmTeXPW+k8Sc=
 github.com/cncf/udpa/go v0.0.0-20201120205902-5459f2c99403/go.mod h1:WmhPx2Nbnhtbo57+VJT5O0JRkEi1Wbu0z5j0R8u5Hbk=
@@ -158,8 +156,6 @@ github.com/google/renameio v0.1.0/go.mod h1:KWCgfxg9yswjAJkECMjeO8J8rahYeXnNhOm4
 github.com/google/uuid v1.1.2/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/googleapis/gax-go/v2 v2.0.4/go.mod h1:0Wqv26UfaUD9n4G6kQubkQ+KchISgw+vpHVxEJEs9eg=
 github.com/googleapis/gax-go/v2 v2.0.5/go.mod h1:DWXyrwAJ9X0FpwwEdw+IPEYBICEFu5mhpdKc/us6bOk=
-github.com/gorilla/mux v1.8.0 h1:i40aqfkR1h2SlN9hojwV5ZA91wcXFOvkdNIeFDP5koI=
-github.com/gorilla/mux v1.8.0/go.mod h1:DVbg23sWSpFRCP0SfiEN6jmj59UnW/n46BH5rLB71So=
 github.com/grafana/grafana-plugin-sdk-go v0.141.0 h1:BvoeJCjBxijGzujamVvmMTdb+Ex+vIxa4YGcf3GGsjo=
 github.com/grafana/grafana-plugin-sdk-go v0.141.0/go.mod h1:srvRQ+de4C5h7FqA5lSFUkFCs5pJolWT+PGV2AyBOFk=
 github.com/grpc-ecosystem/grpc-gateway v1.16.0/go.mod h1:BDjrQk3hbvj6Nolgz8mAMFbcEtjT1g+wF4CSlocrBnw=
