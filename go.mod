@@ -3,6 +3,7 @@ module github.com/clambin/simplejson/v3
 go 1.18
 
 require (
+	github.com/clambin/go-metrics v0.6.2
 	github.com/grafana/grafana-plugin-sdk-go v0.141.0
 	github.com/prometheus/client_golang v1.13.0
 	github.com/prometheus/client_model v0.3.0
@@ -20,6 +21,7 @@ require (
 	github.com/golang/snappy v0.0.3 // indirect
 	github.com/google/flatbuffers v2.0.0+incompatible // indirect
 	github.com/google/go-cmp v0.5.8 // indirect
+	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.13.1 // indirect
 	github.com/kr/text v0.2.0 // indirect

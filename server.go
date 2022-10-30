@@ -3,6 +3,7 @@ package simplejson
 import (
 	"context"
 	"fmt"
+	middleware2 "github.com/clambin/go-metrics/server/middleware"
 	"github.com/clambin/simplejson/v3/annotation"
 	"github.com/clambin/simplejson/v3/pkg/middleware"
 	"github.com/clambin/simplejson/v3/query"
@@ -92,7 +93,7 @@ var (
 )
 
 func middlewareChain(next http.HandlerFunc, methods ...string) http.Handler {
-	return middleware.HTTPMetrics(
+	return middleware2.HTTPMetricsWithRecorder(
 		middleware.HandleForMethods(next, methods...),
 		func(path, method string, statusCode int, duration time.Duration) {
 			httpDuration.WithLabelValues(path, method, strconv.Itoa(statusCode)).Observe(duration.Seconds())
