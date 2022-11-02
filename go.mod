@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/clambin/go-metrics v0.6.3
-	github.com/grafana/grafana-plugin-sdk-go v0.141.0
+	github.com/grafana/grafana-plugin-sdk-go v0.142.0
 	github.com/prometheus/client_golang v1.13.0
 	github.com/prometheus/client_model v0.3.0
 	github.com/sirupsen/logrus v1.9.0
