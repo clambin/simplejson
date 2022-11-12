@@ -2,62 +2,60 @@ package simplejson
 
 import (
 	"context"
-	"fmt"
-	middleware2 "github.com/clambin/go-metrics/server/middleware"
+	"github.com/clambin/httpserver"
 	"github.com/clambin/simplejson/v3/annotation"
-	"github.com/clambin/simplejson/v3/pkg/middleware"
 	"github.com/clambin/simplejson/v3/query"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
-	"net"
 	"net/http"
 	"sort"
-	"strconv"
-	"sync"
 	"time"
 )
 
 // Server receives SimpleJSON requests from Grafana and dispatches them to the handler that serves the specified target.
 type Server struct {
-	Name       string
-	Handlers   map[string]Handler
-	HTTPServer *http.Server
-	lock       sync.RWMutex
+	Handlers     map[string]Handler
+	queryMetrics QueryMetrics
+	httpServer   *httpserver.Server
+}
+
+func New(name string, handlers map[string]Handler, options ...httpserver.Option) (s *Server, err error) {
+	return NewWithRegisterer(name, handlers, prometheus.DefaultRegisterer, options...)
+}
+
+func NewWithRegisterer(name string, handlers map[string]Handler, r prometheus.Registerer, options ...httpserver.Option) (s *Server, err error) {
+	s = &Server{
+		Handlers:     handlers,
+		queryMetrics: NewQueryMetrics(name),
+	}
+
+	s.queryMetrics.Register(r)
+	metrics := httpserver.NewMetrics(name)
+	metrics.Register(r)
+
+	options = append(options,
+		httpserver.WithMetrics{Metrics: metrics},
+		httpserver.WithHandlers{Handlers: []httpserver.Handler{
+			{Path: "/", Handler: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) })},
+			{Path: "/search", Handler: http.HandlerFunc(s.Search), Methods: []string{http.MethodPost}},
+			{Path: "/query", Handler: http.HandlerFunc(s.Query), Methods: []string{http.MethodPost}},
+			{Path: "/annotations", Handler: http.HandlerFunc(s.Annotations), Methods: []string{http.MethodPost, http.MethodOptions}},
+			{Path: "/tag-keys", Handler: http.HandlerFunc(s.TagKeys), Methods: []string{http.MethodPost}},
+			{Path: "/tag-values", Handler: http.HandlerFunc(s.TagValues), Methods: []string{http.MethodPost}},
+		}})
+
+	s.httpServer, err = httpserver.New(options...)
+
+	return s, err
 }
 
 // Run starts the SimpleJSon Server.
-func (s *Server) Run(port int) error {
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
-	if err != nil {
-		return err
-	}
-
-	s.lock.Lock()
-	s.HTTPServer = &http.Server{
-		Handler: s.GetRouter(),
-	}
-	s.lock.Unlock()
-	return s.HTTPServer.Serve(listener)
+func (s *Server) Run() error {
+	return s.httpServer.Run()
 }
 
 // Shutdown stops a running Server.
-func (s *Server) Shutdown(ctx context.Context, timeout time.Duration) (err error) {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
-
-	if s.HTTPServer != nil {
-		newCtx, cancel := context.WithTimeout(ctx, timeout)
-		defer cancel()
-		err = s.HTTPServer.Shutdown(newCtx)
-	}
-	return
-}
-
-// Running returns true if the HTTP Server is running
-func (s *Server) Running() bool {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
-	return s.HTTPServer != nil
+func (s *Server) Shutdown(timeout time.Duration) (err error) {
+	return s.httpServer.Shutdown(timeout)
 }
 
 // Targets returns a sorted list of supported targets
@@ -67,37 +65,6 @@ func (s *Server) Targets() (targets []string) {
 	}
 	sort.Strings(targets)
 	return
-}
-
-// GetRouter sets up an HTTP router for the SimpleJSON endpoints
-func (s *Server) GetRouter() (m *http.ServeMux) {
-	m = http.NewServeMux()
-	m.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-
-	m.Handle("/search", middlewareChain(s.Search, http.MethodPost))
-	m.Handle("/query", middlewareChain(s.Query, http.MethodPost))
-	m.Handle("/annotations", middlewareChain(s.Annotations, http.MethodPost, http.MethodOptions))
-	m.Handle("/tag-keys", middlewareChain(s.TagKeys, http.MethodPost))
-	m.Handle("/tag-values", middlewareChain(s.TagValues, http.MethodPost))
-	return
-}
-
-// HTTPMetrics metrics
-var (
-	httpDuration = promauto.NewSummaryVec(prometheus.SummaryOpts{
-		Name: "simplejson_request_duration_seconds",
-		Help: "Duration of HTTP requests",
-	}, []string{"path", "method", "status_code"})
-)
-
-func middlewareChain(next http.HandlerFunc, methods ...string) http.Handler {
-	return middleware2.HTTPMetricsWithRecorder(
-		middleware.HandleForMethods(next, methods...),
-		func(path, method string, statusCode int, duration time.Duration) {
-			httpDuration.WithLabelValues(path, method, strconv.Itoa(statusCode)).Observe(duration.Seconds())
-		})
 }
 
 // Handler implements the different Grafana SimpleJSON endpoints.  The interface only contains a single Endpoints() function,
