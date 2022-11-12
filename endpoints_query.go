@@ -42,16 +42,17 @@ func (s *Server) handleQueryRequest(ctx context.Context, target query.Target, re
 }
 
 type QueryMetrics struct {
-	Duration *prometheus.SummaryVec
+	Duration *prometheus.HistogramVec
 	Errors   *prometheus.CounterVec
 }
 
 func NewQueryMetrics(name string) QueryMetrics {
 	qm := QueryMetrics{
-		Duration: prometheus.NewSummaryVec(prometheus.SummaryOpts{
+		Duration: prometheus.NewHistogramVec(prometheus.HistogramOpts{
 			Name:        prometheus.BuildFQName("simplejson", "query", "duration_seconds"),
 			Help:        "Grafana SimpleJSON server duration of query requests in seconds",
 			ConstLabels: prometheus.Labels{"app": name},
+			Buckets:     prometheus.DefBuckets,
 		}, []string{"target", "type"}),
 		Errors: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name:        prometheus.BuildFQName("simplejson", "query", "failed_count"),
