@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/clambin/httpserver"
 	"github.com/clambin/simplejson/v3"
 	"github.com/clambin/simplejson/v3/annotation"
 	"github.com/clambin/simplejson/v3/query"
@@ -14,30 +15,34 @@ import (
 )
 
 func main() {
-	s := simplejson.Server{Handlers: map[string]simplejson.Handler{
+	s, err := simplejson.New("test", map[string]simplejson.Handler{
 		"A": &handler{},
 		"B": &handler{table: true},
 		"C": &annoHandler{},
-	}}
+	}, httpserver.WithPort{Port: 8080})
+
+	if err != nil {
+		panic(err)
+	}
 
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
-		err := http.ListenAndServe(":9090", nil)
-		if !errors.Is(err, http.ErrServerClosed) {
-			panic(err)
+		err2 := http.ListenAndServe(":9090", nil)
+		if !errors.Is(err2, http.ErrServerClosed) {
+			panic(err2)
 		}
 	}()
 
 	log.SetLevel(log.DebugLevel)
-	err := s.Run(8080)
-	if !errors.Is(err, http.ErrServerClosed) {
+	err = s.Run()
+	if err != nil {
 		panic(err)
 	}
 }
 
 type handler struct{ table bool }
 
-func (h handler) Endpoints() simplejson.Endpoints {
+func (h *handler) Endpoints() simplejson.Endpoints {
 	return simplejson.Endpoints{
 		Query:       h.Query,
 		Annotations: h.Annotations,

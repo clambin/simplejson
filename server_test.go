@@ -1,15 +1,12 @@
-package simplejson_test
+package simplejson
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"fmt"
-	"github.com/clambin/simplejson/v3"
 	"github.com/clambin/simplejson/v3/annotation"
 	"github.com/clambin/simplejson/v3/query"
 	"github.com/prometheus/client_golang/prometheus"
-	pcg "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"net/http"
@@ -22,30 +19,66 @@ import (
 var update = flag.Bool("update", false, "update .golden files")
 
 func TestServer_Run_Shutdown(t *testing.T) {
+	r := prometheus.NewRegistry()
+	srv, err := NewWithRegisterer("test", handlers, r)
+	require.NoError(t, err)
+
 	wg := sync.WaitGroup{}
-	srv := simplejson.Server{Handlers: handlers}
 	wg.Add(1)
 	go func() {
-		err := srv.Run(0)
-		require.True(t, errors.Is(err, http.ErrServerClosed))
+		err2 := srv.Run()
+		assert.NoError(t, err2)
 		wg.Done()
 	}()
 
 	assert.Eventually(t, func() bool {
-		return srv.Running()
-	}, time.Second, 100*time.Millisecond)
+		var resp *http.Response
+		resp, err = http.Get(fmt.Sprintf("http://localhost:%d/", srv.httpServer.GetPort()))
+		if err != nil {
+			return false
+		}
+		_ = resp.Body.Close()
+		return resp.StatusCode == http.StatusOK
+	}, time.Second, time.Millisecond)
 
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodPost, "/search", nil)
-	srv.HTTPServer.Handler.ServeHTTP(w, req)
-	require.Equal(t, http.StatusOK, w.Code)
+	var resp *http.Response
+	resp, err = http.Post(fmt.Sprintf("http://localhost:%d/search", srv.httpServer.GetPort()), "", nil)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	_ = resp.Body.Close()
 
-	if err := srv.Shutdown(context.Background(), 5*time.Second); err != nil {
-		panic(err)
-	}
+	err = srv.Shutdown(5 * time.Second)
+	require.NoError(t, err)
 	wg.Wait()
 }
 
+func TestServer_Metrics(t *testing.T) {
+	r := prometheus.NewRegistry()
+	srv, err := NewWithRegisterer("foobar", nil, r)
+	require.NoError(t, err)
+
+	req, _ := http.NewRequest(http.MethodPost, "/search", nil)
+	w := httptest.NewRecorder()
+	srv.httpServer.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+
+	m, err := r.Gather()
+	require.NoError(t, err)
+	require.Len(t, m, 2)
+	for _, metric := range m {
+		require.Len(t, metric.GetMetric(), 1)
+		switch metric.GetName() {
+		case "http_requests_duration_seconds":
+			assert.Equal(t, uint64(1), metric.GetMetric()[0].Histogram.GetSampleCount())
+		case "http_requests_total":
+			assert.Equal(t, 1.0, metric.GetMetric()[0].Counter.GetValue())
+		default:
+			t.Fatalf("unexpected metric: %s", metric.GetName())
+		}
+	}
+}
+
+/*
 func TestServer_Metrics(t *testing.T) {
 	r := s.GetRouter()
 
@@ -69,6 +102,7 @@ func TestServer_Metrics(t *testing.T) {
 	}
 	assert.True(t, found)
 }
+*/
 
 //
 //
@@ -84,7 +118,7 @@ type testHandler struct {
 	tagValues     map[string][]string
 }
 
-var _ simplejson.Handler = &testHandler{}
+var _ Handler = &testHandler{}
 
 var (
 	queryResponses = map[string]*query.TimeSeriesResponse{
@@ -134,7 +168,7 @@ var (
 		"bar": {"1", "2"},
 	}
 
-	handlers = map[string]simplejson.Handler{
+	handlers = map[string]Handler{
 		"A": &testHandler{
 			queryResponse: queryResponses["A"],
 			annotations:   annotations,
@@ -149,10 +183,10 @@ var (
 		},
 	}
 
-	s = simplejson.Server{Handlers: handlers}
+	s, _ = New("foo", handlers)
 )
 
-func (handler *testHandler) Endpoints() (endpoints simplejson.Endpoints) {
+func (handler *testHandler) Endpoints() (endpoints Endpoints) {
 	if handler.noEndpoints {
 		return
 	}

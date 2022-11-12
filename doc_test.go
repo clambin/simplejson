@@ -10,14 +10,14 @@ import (
 )
 
 func Example() {
-	s := simplejson.Server{
-		Handlers: map[string]simplejson.Handler{
-			"A": &handler{},
-			"B": &handler{table: true},
-		},
-	}
+	s, err := simplejson.New("test", map[string]simplejson.Handler{
+		"A": &handler{},
+		"B": &handler{table: true},
+	})
 
-	_ = s.Run(8088)
+	if err == nil {
+		_ = s.Run()
+	}
 }
 
 type handler struct{ table bool }

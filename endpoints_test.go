@@ -1,4 +1,4 @@
-package simplejson_test
+package simplejson
 
 import (
 	"bytes"
