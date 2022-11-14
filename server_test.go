@@ -1,6 +1,7 @@
 package simplejson
 
 import (
+	"bytes"
 	"context"
 	"flag"
 	"fmt"
@@ -54,24 +55,23 @@ func TestServer_Run_Shutdown(t *testing.T) {
 
 func TestServer_Metrics(t *testing.T) {
 	r := prometheus.NewRegistry()
-	srv, err := NewWithRegisterer("foobar", nil, r)
+	srv, err := NewWithRegisterer("foobar", handlers, r)
 	require.NoError(t, err)
 
-	req, _ := http.NewRequest(http.MethodPost, "/search", nil)
+	req, _ := http.NewRequest(http.MethodPost, "/query", bytes.NewBufferString(`{ "targets": [ { "target": "A", "type": "table" } ] }`))
 	w := httptest.NewRecorder()
+
 	srv.httpServer.ServeHTTP(w, req)
 	require.Equal(t, http.StatusOK, w.Code)
 
 	m, err := r.Gather()
 	require.NoError(t, err)
-	require.Len(t, m, 2)
+	require.Len(t, m, 1)
 	for _, metric := range m {
 		require.Len(t, metric.GetMetric(), 1)
 		switch metric.GetName() {
-		case "http_requests_duration_seconds":
+		case "simplejson_query_duration_seconds":
 			assert.Equal(t, uint64(1), metric.GetMetric()[0].Histogram.GetSampleCount())
-		case "http_requests_total":
-			assert.Equal(t, 1.0, metric.GetMetric()[0].Counter.GetValue())
 		default:
 			t.Fatalf("unexpected metric: %s", metric.GetName())
 		}

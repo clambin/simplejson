@@ -29,11 +29,11 @@ func NewWithRegisterer(name string, handlers map[string]Handler, r prometheus.Re
 	}
 
 	s.queryMetrics.Register(r)
-	metrics := httpserver.NewMetrics(name)
-	metrics.Register(r)
+	//metrics := httpserver.NewMetrics(name)
+	//metrics.Register(r)
 
 	options = append(options,
-		httpserver.WithMetrics{Metrics: metrics},
+		//httpserver.WithMetrics{Metrics: metrics},
 		httpserver.WithHandlers{Handlers: []httpserver.Handler{
 			{Path: "/", Handler: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) })},
 			{Path: "/search", Handler: http.HandlerFunc(s.Search), Methods: []string{http.MethodPost}},
