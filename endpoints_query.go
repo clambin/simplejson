@@ -9,8 +9,8 @@ import (
 )
 
 func (s *Server) handleQuery(ctx context.Context, request query.Request) (responses []json.Marshaler, err error) {
-	responses = make([]json.Marshaler, len(request.Targets))
-	for index, target := range request.Targets {
+	responses = make([]json.Marshaler, 0, len(request.Targets))
+	for _, target := range request.Targets {
 		timer := prometheus.NewTimer(s.queryMetrics.Duration.WithLabelValues(target.Name, target.Type))
 
 		var response query.Response
@@ -18,7 +18,7 @@ func (s *Server) handleQuery(ctx context.Context, request query.Request) (respon
 
 		timer.ObserveDuration()
 		if err == nil {
-			responses[index] = response
+			responses = append(responses, response)
 		} else {
 			s.queryMetrics.Errors.WithLabelValues(target.Name, target.Type).Add(1.0)
 			break
