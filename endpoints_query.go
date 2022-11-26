@@ -8,23 +8,21 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-func (s *Server) handleQuery(ctx context.Context, request query.Request) (responses []json.Marshaler, err error) {
-	responses = make([]json.Marshaler, 0, len(request.Targets))
+func (s *Server) handleQuery(ctx context.Context, request query.Request) ([]json.Marshaler, error) {
+	responses := make([]json.Marshaler, 0, len(request.Targets))
 	for _, target := range request.Targets {
 		timer := prometheus.NewTimer(s.queryMetrics.Duration.WithLabelValues(target.Name, target.Type))
 
-		var response query.Response
-		response, err = s.handleQueryRequest(ctx, target, request)
+		response, err := s.handleQueryRequest(ctx, target, request)
 
 		timer.ObserveDuration()
-		if err == nil {
-			responses = append(responses, response)
-		} else {
+		if err != nil {
 			s.queryMetrics.Errors.WithLabelValues(target.Name, target.Type).Add(1.0)
-			break
+			return nil, err
 		}
+		responses = append(responses, response)
 	}
-	return responses, err
+	return responses, nil
 }
 
 func (s *Server) handleQueryRequest(ctx context.Context, target query.Target, request query.Request) (query.Response, error) {
