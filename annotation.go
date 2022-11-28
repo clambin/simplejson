@@ -1,20 +1,14 @@
-package annotation
+package simplejson
 
 import (
 	"encoding/json"
-	"github.com/clambin/simplejson/v3/common"
 	"time"
 )
 
-// Request is a query for annotation.
-type Request struct {
+// AnnotationRequest is a query for annotation.
+type AnnotationRequest struct {
 	Annotation RequestDetails `json:"annotation"`
 	Args
-}
-
-// Args contains arguments for the Annotations endpoint.
-type Args struct {
-	common.Args
 }
 
 // RequestDetails specifies which annotation should be returned.
@@ -25,13 +19,13 @@ type RequestDetails struct {
 	Query      string `json:"query"`
 }
 
-// UnmarshalJSON unmarshalls a Request from JSON
-func (r *Request) UnmarshalJSON(b []byte) (err error) {
-	type Request2 Request
+// UnmarshalJSON unmarshalls a AnnotationRequest from JSON
+func (r *AnnotationRequest) UnmarshalJSON(b []byte) (err error) {
+	type Request2 AnnotationRequest
 	var c Request2
 	err = json.Unmarshal(b, &c)
 	if err == nil {
-		*r = Request(c)
+		*r = AnnotationRequest(c)
 	}
 	return err
 }

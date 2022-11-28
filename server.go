@@ -3,8 +3,6 @@ package simplejson
 import (
 	"context"
 	"github.com/clambin/httpserver"
-	"github.com/clambin/simplejson/v3/annotation"
-	"github.com/clambin/simplejson/v3/query"
 	"github.com/prometheus/client_golang/prometheus"
 	"net/http"
 	"sort"
@@ -78,10 +76,10 @@ type Endpoints struct {
 }
 
 // QueryFunc handles queries
-type QueryFunc func(ctx context.Context, req query.Request) (query.Response, error)
+type QueryFunc func(ctx context.Context, req QueryRequest) (Response, error)
 
 // AnnotationsFunc handles requests for annotation
-type AnnotationsFunc func(req annotation.Request) ([]annotation.Annotation, error)
+type AnnotationsFunc func(req AnnotationRequest) ([]Annotation, error)
 
 // TagKeysFunc returns supported tag names
 type TagKeysFunc func(ctx context.Context) []string

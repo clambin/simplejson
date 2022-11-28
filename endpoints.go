@@ -2,8 +2,6 @@ package simplejson
 
 import (
 	"encoding/json"
-	"github.com/clambin/simplejson/v3/annotation"
-	"github.com/clambin/simplejson/v3/query"
 	"net/http"
 )
 
@@ -13,7 +11,7 @@ func (s *Server) Search(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (s *Server) Query(w http.ResponseWriter, req *http.Request) {
-	var request query.Request
+	var request QueryRequest
 	handleEndpoint(w, req, &request, func() ([]json.Marshaler, error) {
 		return s.handleQuery(req.Context(), request)
 	})
@@ -28,32 +26,28 @@ func (s *Server) Annotations(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	var request annotation.Request
-	handleEndpoint(w, req, &request, func() (response []json.Marshaler, err error) {
-		var annotations []annotation.Annotation
+	var request AnnotationRequest
+	handleEndpoint(w, req, &request, func() ([]json.Marshaler, error) {
+		var annotations []Annotation
 		for _, h := range s.Handlers {
-			if h.Endpoints().Annotations == nil {
-				continue
-			}
-
-			var newAnnotations []annotation.Annotation
-			newAnnotations, err = h.Endpoints().Annotations(request)
-
-			if err == nil {
-				annotations = append(annotations, newAnnotations...)
+			if h.Endpoints().Annotations != nil {
+				if newAnnotations, err := h.Endpoints().Annotations(request); err == nil {
+					annotations = append(annotations, newAnnotations...)
+				}
 			}
 		}
 
+		var response []json.Marshaler
 		for index := range annotations {
 			annotations[index].Request = request.Annotation
 			response = append(response, &annotations[index])
 		}
-		return
+		return response, nil
 	})
 }
 
 func (s *Server) TagKeys(w http.ResponseWriter, req *http.Request) {
-	handleEndpoint(w, req, nil, func() (keys []json.Marshaler, err error) {
+	handleEndpoint(w, req, nil, func() (keys []json.Marshaler, _ error) {
 		for _, handler := range s.Handlers {
 			if handler.Endpoints().TagKeys != nil {
 				for _, newKey := range handler.Endpoints().TagKeys(req.Context()) {
@@ -67,22 +61,23 @@ func (s *Server) TagKeys(w http.ResponseWriter, req *http.Request) {
 
 func (s *Server) TagValues(w http.ResponseWriter, req *http.Request) {
 	var key valueKey
-	handleEndpoint(w, req, &key, func() (response []json.Marshaler, err error) {
+	handleEndpoint(w, req, &key, func() ([]json.Marshaler, error) {
+		var response []json.Marshaler
 		for _, handler := range s.Handlers {
-			if handler.Endpoints().TagValues != nil {
-				var values []string
-				values, err = handler.Endpoints().TagValues(req.Context(), key.Key)
-				if err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					return nil, err
-				}
+			if handler.Endpoints().TagValues == nil {
+				continue
+			}
+			values, err := handler.Endpoints().TagValues(req.Context(), key.Key)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return nil, err
+			}
 
-				for _, v := range values {
-					response = append(response, &value{Text: v})
-				}
+			for _, v := range values {
+				response = append(response, &value{Text: v})
 			}
 		}
-		return
+		return response, nil
 	})
 }
 

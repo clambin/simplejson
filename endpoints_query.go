@@ -4,11 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/clambin/simplejson/v3/query"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-func (s *Server) handleQuery(ctx context.Context, request query.Request) ([]json.Marshaler, error) {
+func (s *Server) handleQuery(ctx context.Context, request QueryRequest) ([]json.Marshaler, error) {
 	responses := make([]json.Marshaler, 0, len(request.Targets))
 	for _, target := range request.Targets {
 		timer := prometheus.NewTimer(s.queryMetrics.Duration.WithLabelValues(target.Name, target.Type))
@@ -25,7 +24,11 @@ func (s *Server) handleQuery(ctx context.Context, request query.Request) ([]json
 	return responses, nil
 }
 
-func (s *Server) handleQueryRequest(ctx context.Context, target query.Target, request query.Request) (query.Response, error) {
+type Response interface {
+	MarshalJSON() ([]byte, error)
+}
+
+func (s *Server) handleQueryRequest(ctx context.Context, target Target, request QueryRequest) (Response, error) {
 	handler, ok := s.Handlers[target.Name]
 	if !ok {
 		return nil, fmt.Errorf("no handler found for target '%s'", target)

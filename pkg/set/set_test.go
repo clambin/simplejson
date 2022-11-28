@@ -1,7 +1,7 @@
 package set_test
 
 import (
-	"github.com/clambin/simplejson/v3/pkg/set"
+	"github.com/clambin/simplejson/v4/pkg/set"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

@@ -1,26 +1,23 @@
-package annotation_test
+package simplejson
 
 import (
 	"encoding/json"
-	"flag"
-	"github.com/clambin/simplejson/v3/annotation"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
 
-var update = flag.Bool("update", false, "update .golden files")
-
 func TestAnnotation_MarshalJSON(t *testing.T) {
-	ann := annotation.Annotation{
+	ann := Annotation{
 		Time:  time.Date(2022, time.January, 23, 0, 0, 0, 0, time.UTC),
 		Title: "foo",
 		Text:  "bar",
 		Tags:  []string{"A", "B"},
-		Request: annotation.RequestDetails{
+		Request: RequestDetails{
 			Name:       "snafu",
 			Datasource: "datasource",
 			Enable:     true,
@@ -31,7 +28,7 @@ func TestAnnotation_MarshalJSON(t *testing.T) {
 	body, err := json.Marshal(ann)
 	require.NoError(t, err)
 
-	gp := filepath.Join("testdata", t.Name()+"_1.golden")
+	gp := filepath.Join("testdata", strings.ToLower(t.Name()), "1.golden")
 	if *update {
 		t.Logf("updating golden file for %s", t.Name())
 		err = os.WriteFile(gp, body, 0644)
@@ -54,7 +51,7 @@ func TestAnnotation_MarshalJSON(t *testing.T) {
 	body, err = json.Marshal(ann)
 	require.NoError(t, err)
 
-	gp = filepath.Join("testdata", t.Name()+"_2.golden")
+	gp = filepath.Join("testdata", strings.ToLower(t.Name()), "2.golden")
 	if *update {
 		t.Logf("updating golden file for %s", t.Name())
 		err = os.WriteFile(gp, body, 0644)

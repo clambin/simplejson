@@ -3,9 +3,7 @@ package simplejson_test
 import (
 	"context"
 	"fmt"
-	"github.com/clambin/simplejson/v3"
-	"github.com/clambin/simplejson/v3/annotation"
-	"github.com/clambin/simplejson/v3/query"
+	"github.com/clambin/simplejson/v4"
 	"time"
 )
 
@@ -31,33 +29,33 @@ func (h *handler) Endpoints() simplejson.Endpoints {
 	}
 }
 
-func (h *handler) Query(ctx context.Context, req query.Request) (query.Response, error) {
+func (h *handler) Query(ctx context.Context, req simplejson.QueryRequest) (simplejson.Response, error) {
 	if h.table == false {
 		return h.timeSeriesQuery(ctx, req)
 	}
 	return h.tableQuery(ctx, req)
 }
 
-func (h *handler) timeSeriesQuery(_ context.Context, _ query.Request) (*query.TimeSeriesResponse, error) {
-	dataPoints := make([]query.DataPoint, 60)
+func (h *handler) timeSeriesQuery(_ context.Context, _ simplejson.QueryRequest) (simplejson.TimeSeriesResponse, error) {
+	dataPoints := make([]simplejson.DataPoint, 60)
 	timestamp := time.Now().Add(-1 * time.Hour)
 	for i := 0; i < 60; i++ {
-		dataPoints[i] = query.DataPoint{
+		dataPoints[i] = simplejson.DataPoint{
 			Timestamp: timestamp,
-			Value:     int64(i),
+			Value:     float64(i),
 		}
 		timestamp = timestamp.Add(1 * time.Minute)
 	}
 
-	return &query.TimeSeriesResponse{
+	return simplejson.TimeSeriesResponse{
 		DataPoints: dataPoints,
 	}, nil
 }
 
-func (h *handler) tableQuery(_ context.Context, _ query.Request) (*query.TableResponse, error) {
-	timestamps := make(query.TimeColumn, 60)
-	seriesA := make(query.NumberColumn, 60)
-	seriesB := make(query.NumberColumn, 60)
+func (h *handler) tableQuery(_ context.Context, _ simplejson.QueryRequest) (simplejson.TableResponse, error) {
+	timestamps := make(simplejson.TimeColumn, 60)
+	seriesA := make(simplejson.NumberColumn, 60)
+	seriesB := make(simplejson.NumberColumn, 60)
 
 	timestamp := time.Now().Add(-1 * time.Hour)
 	for i := 0; i < 60; i++ {
@@ -67,17 +65,15 @@ func (h *handler) tableQuery(_ context.Context, _ query.Request) (*query.TableRe
 		timestamp = timestamp.Add(1 * time.Minute)
 	}
 
-	return &query.TableResponse{
-		Columns: []query.Column{
-			{Text: "timestamp", Data: timestamps},
-			{Text: "series A", Data: seriesA},
-			{Text: "series B", Data: seriesB},
-		},
-	}, nil
+	return simplejson.TableResponse{Columns: []simplejson.Column{
+		{Text: "timestamp", Data: timestamps},
+		{Text: "series A", Data: seriesA},
+		{Text: "series B", Data: seriesB},
+	}}, nil
 }
 
-func (h *handler) Annotations(_ annotation.Request) ([]annotation.Annotation, error) {
-	return []annotation.Annotation{{
+func (h *handler) Annotations(_ simplejson.AnnotationRequest) ([]simplejson.Annotation, error) {
+	return []simplejson.Annotation{{
 		Time:  time.Now().Add(-5 * time.Minute),
 		Title: "foo",
 		Text:  "bar",

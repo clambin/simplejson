@@ -1,12 +1,12 @@
-module github.com/clambin/simplejson/v3
+module github.com/clambin/simplejson/v4
 
 go 1.18
 
 require (
 	github.com/clambin/httpserver v0.4.0
 	github.com/grafana/grafana-plugin-sdk-go v0.144.0
+	github.com/mailru/easyjson v0.7.7
 	github.com/prometheus/client_golang v1.14.0
-	github.com/sirupsen/logrus v1.9.0
 	github.com/stretchr/testify v1.8.1
 )
 
@@ -21,6 +21,7 @@ require (
 	github.com/google/flatbuffers v2.0.0+incompatible // indirect
 	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
+	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.13.1 // indirect
 	github.com/kr/text v0.2.0 // indirect

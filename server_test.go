@@ -5,8 +5,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/clambin/simplejson/v3/annotation"
-	"github.com/clambin/simplejson/v3/query"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -112,8 +110,8 @@ func TestServer_Metrics(t *testing.T) {
 type testHandler struct {
 	noEndpoints bool
 
-	queryResponse query.Response
-	annotations   []annotation.Annotation
+	queryResponse Response
+	annotations   []Annotation
 	tags          []string
 	tagValues     map[string][]string
 }
@@ -121,10 +119,10 @@ type testHandler struct {
 var _ Handler = &testHandler{}
 
 var (
-	queryResponses = map[string]*query.TimeSeriesResponse{
+	queryResponses = map[string]*TimeSeriesResponse{
 		"A": {
 			Target: "A",
-			DataPoints: []query.DataPoint{
+			DataPoints: []DataPoint{
 				{Timestamp: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC), Value: 100},
 				{Timestamp: time.Date(2020, 1, 1, 0, 1, 0, 0, time.UTC), Value: 101},
 				{Timestamp: time.Date(2020, 1, 1, 0, 2, 0, 0, time.UTC), Value: 103},
@@ -132,7 +130,7 @@ var (
 		},
 		"B": {
 			Target: "B",
-			DataPoints: []query.DataPoint{
+			DataPoints: []DataPoint{
 				{Timestamp: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC), Value: 100},
 				{Timestamp: time.Date(2020, 1, 1, 0, 1, 0, 0, time.UTC), Value: 99},
 				{Timestamp: time.Date(2020, 1, 1, 0, 2, 0, 0, time.UTC), Value: 98},
@@ -140,21 +138,21 @@ var (
 		},
 	}
 
-	tableQueryResponse = map[string]*query.TableResponse{
+	tableQueryResponse = map[string]*TableResponse{
 		"C": {
-			Columns: []query.Column{
-				{Text: "Time", Data: query.TimeColumn{
+			Columns: []Column{
+				{Text: "Time", Data: TimeColumn{
 					time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
 					time.Date(2020, 1, 1, 0, 1, 0, 0, time.UTC),
 				}},
-				{Text: "Label", Data: query.StringColumn{"foo", "bar"}},
-				{Text: "Series A", Data: query.NumberColumn{42, 43}},
-				{Text: "Series B", Data: query.NumberColumn{64.5, 100.0}},
+				{Text: "Label", Data: StringColumn{"foo", "bar"}},
+				{Text: "Series A", Data: NumberColumn{42, 43}},
+				{Text: "Series B", Data: NumberColumn{64.5, 100.0}},
 			},
 		},
 	}
 
-	annotations = []annotation.Annotation{{
+	annotations = []Annotation{{
 		Time:  time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
 		Title: "foo",
 		Text:  "bar",
@@ -205,11 +203,11 @@ func (handler *testHandler) Endpoints() (endpoints Endpoints) {
 	return
 }
 
-func (handler *testHandler) Query(_ context.Context, _ query.Request) (response query.Response, err error) {
+func (handler *testHandler) Query(_ context.Context, _ QueryRequest) (response Response, err error) {
 	return handler.queryResponse, nil
 }
 
-func (handler *testHandler) Annotations(_ annotation.Request) (annotations []annotation.Annotation, err error) {
+func (handler *testHandler) Annotations(_ AnnotationRequest) (annotations []Annotation, err error) {
 	return handler.annotations, nil
 }
 
@@ -219,7 +217,7 @@ func (handler *testHandler) Tags(_ context.Context) (tags []string) {
 
 func (handler *testHandler) TagValues(_ context.Context, tag string) (values []string, err error) {
 	var ok bool
-	if values, ok = handler.tagValues[tag]; ok == false {
+	if values, ok = handler.tagValues[tag]; !ok {
 		err = fmt.Errorf("unsupported tag '%s'", tag)
 	}
 	return
