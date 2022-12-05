@@ -33,7 +33,7 @@ func TestRequests(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, uint64(100), output.MaxDataPoints)
 	// assert.Equal(t, server.QueryRequestDuration(1*time.Hour), output.Interval)
-	// assert.Equal(t, 1*time.Hour, time.Duration(output.Interval))
+	// assert.Equal(t, 1*time.Hour, time.duration(output.Interval))
 	assert.Equal(t, time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC), output.Range.From)
 	assert.Equal(t, time.Date(2020, 12, 31, 0, 0, 0, 0, time.UTC), output.Range.To)
 	require.Len(t, output.Targets, 2)
