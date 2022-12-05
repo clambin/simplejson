@@ -1,7 +1,7 @@
 package data
 
 import (
-	"github.com/clambin/simplejson/v4"
+	"github.com/clambin/simplejson/v5"
 	"time"
 )
 

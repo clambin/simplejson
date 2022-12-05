@@ -1,4 +1,4 @@
-module github.com/clambin/simplejson/v4
+module github.com/clambin/simplejson/v5
 
 go 1.18
 

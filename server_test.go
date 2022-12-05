@@ -19,7 +19,9 @@ var update = flag.Bool("update", false, "update .golden files")
 
 func TestServer_Run_Shutdown(t *testing.T) {
 	r := prometheus.NewRegistry()
-	srv, err := NewWithRegisterer("test", handlers, r)
+	m := NewQueryMetrics("test")
+	r.MustRegister(m)
+	srv, err := New(handlers, WithQueryMetrics{QueryMetrics: m})
 	require.NoError(t, err)
 
 	wg := sync.WaitGroup{}
@@ -53,7 +55,9 @@ func TestServer_Run_Shutdown(t *testing.T) {
 
 func TestServer_Metrics(t *testing.T) {
 	r := prometheus.NewRegistry()
-	srv, err := NewWithRegisterer("foobar", handlers, r)
+	m := NewQueryMetrics("test")
+	r.MustRegister(m)
+	srv, err := New(handlers, WithQueryMetrics{QueryMetrics: m})
 	require.NoError(t, err)
 
 	req, _ := http.NewRequest(http.MethodPost, "/query", bytes.NewBufferString(`{ "targets": [ { "target": "A", "type": "table" } ] }`))
@@ -62,10 +66,10 @@ func TestServer_Metrics(t *testing.T) {
 	srv.httpServer.ServeHTTP(w, req)
 	require.Equal(t, http.StatusOK, w.Code)
 
-	m, err := r.Gather()
+	metrics, err := r.Gather()
 	require.NoError(t, err)
-	require.Len(t, m, 1)
-	for _, metric := range m {
+	require.Len(t, metrics, 1)
+	for _, metric := range metrics {
 		require.Len(t, metric.GetMetric(), 1)
 		switch metric.GetName() {
 		case "simplejson_query_duration_seconds":
@@ -181,7 +185,7 @@ var (
 		},
 	}
 
-	s, _ = New("foo", handlers)
+	s, _ = New(handlers)
 )
 
 func (handler *testHandler) Endpoints() (endpoints Endpoints) {
