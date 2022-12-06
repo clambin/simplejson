@@ -3,7 +3,7 @@ module github.com/clambin/simplejson/v5
 go 1.18
 
 require (
-	github.com/clambin/go-common/set v0.1.0
+	github.com/clambin/go-common/set v0.1.1
 	github.com/clambin/httpserver v0.5.0
 	github.com/grafana/grafana-plugin-sdk-go v0.144.0
 	github.com/mailru/easyjson v0.7.7
