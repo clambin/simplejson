@@ -3,6 +3,7 @@ package simplejson
 import (
 	"bytes"
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
@@ -18,17 +19,16 @@ import (
 var update = flag.Bool("update", false, "update .golden files")
 
 func TestServer_Run_Shutdown(t *testing.T) {
-	r := prometheus.NewRegistry()
-	m := NewQueryMetrics("test")
-	r.MustRegister(m)
-	srv, err := New(handlers, WithQueryMetrics{QueryMetrics: m})
+	srv, err := New(handlers, WithQueryMetrics{})
 	require.NoError(t, err)
+	r := prometheus.NewRegistry()
+	r.MustRegister(srv)
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
-		err2 := srv.Run()
-		assert.NoError(t, err2)
+		err2 := srv.Serve()
+		assert.True(t, errors.Is(err2, http.ErrServerClosed))
 		wg.Done()
 	}()
 
@@ -54,11 +54,10 @@ func TestServer_Run_Shutdown(t *testing.T) {
 }
 
 func TestServer_Metrics(t *testing.T) {
-	r := prometheus.NewRegistry()
-	m := NewQueryMetrics("test")
-	r.MustRegister(m)
-	srv, err := New(handlers, WithQueryMetrics{QueryMetrics: m})
+	srv, err := New(handlers, WithQueryMetrics{})
 	require.NoError(t, err)
+	r := prometheus.NewRegistry()
+	r.MustRegister(srv)
 
 	req, _ := http.NewRequest(http.MethodPost, "/query", bytes.NewBufferString(`{ "targets": [ { "target": "A", "type": "table" } ] }`))
 	w := httptest.NewRecorder()

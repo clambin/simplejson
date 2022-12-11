@@ -3,20 +3,24 @@ Package simplejson provides a Go implementation for Grafana's SimpleJSON datasou
 
 # Overview
 
-A simplejson server is an HTTP server that supports one or more handlers.  Each handler can support multiple targets,
-each of which can be supported by a timeseries or table query.  Optionally tag can be used to alter the behaviour of the query
-(e.g. filtering what data should be returned).  Finally, a handler can support annotation, i.e. a set of timestamps with associated text.
+A simplejson server is an HTTP server that supports one or more handlers.  Each handler can support multiple query targets,
+which can be either timeseries or table query. A handler may support tag key/value pairs, which can be passed to the query
+to adapt its behaviour (e.g. filtering what data should be returned) through 'ad hoc filters'. Finally, a handler can support
+annotations, i.e. a set of timestamps with associated text.
 
 # Server
 
 To create a SimpleJSON server, create a Server and run it:
 
-	s := simplejson.Server{
-		Handlers: map[string]simplejson.Handler{
-			"my-target": myHandler,
-		},
+	handlers := map[string]simplejson.Handler{
+		"A": &handler{},
+		"B": &handler{table: true},
 	}
-	err := s.Run(8080)
+	s, err := simplejson.New(handlers, simplejson.WithHTTPServerOption{Option: httpserver.WithPort{Port: 8080}})
+
+	if err == nil {
+		err = s.Serve()
+	}
 
 This starts a server, listening on port 8080, with one target "my-target", served by myHandler.
 
@@ -95,7 +99,7 @@ The /annotations endpoint returns Annotations:
 		return
 	}
 
-NOTE: this is only called when using the SimpleJSON datasource. simPod / GrafanaJsonDatasource does not use the /annotations endpoint.
+NOTE: this is only called when using the SimpleJSON datasource. simPod/GrafanaJsonDatasource does not use the /annotations endpoint.
 Instead, it will call a regular /query and allows to configure its response as annotations instead.
 
 # Tags
@@ -125,8 +129,12 @@ simplejson exports two Prometheus metrics for performance analytics:
 	simplejson_query_duration_seconds: duration of query requests by target, in seconds
 	simplejson_query_failed_count:     number of failed query requests
 
+The underlying http server is implemented by [github.com/clambin/go-common/httpserver], which exports its own set of metrics.
+
 # Other topics
 
 For information on query arguments and tags, refer to the documentation for those data structures.
+
+[github.com/clambin/go-common/httpserver]: https://github.com/clambin/go-common/tree/httpserver/httpserver
 */
 package simplejson
