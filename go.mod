@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/clambin/go-common/httpserver v0.2.0
 	github.com/clambin/go-common/set v0.1.2
-	github.com/grafana/grafana-plugin-sdk-go v0.145.0
+	github.com/grafana/grafana-plugin-sdk-go v0.146.0
 	github.com/mailru/easyjson v0.7.7
 	github.com/prometheus/client_golang v1.14.0
 	github.com/stretchr/testify v1.8.1
@@ -20,7 +20,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.3 // indirect
 	github.com/google/flatbuffers v2.0.0+incompatible // indirect
-	github.com/google/go-cmp v0.5.8 // indirect
+	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
