@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/clambin/go-common/httpserver v0.2.0
 	github.com/clambin/go-common/set v0.1.2
-	github.com/grafana/grafana-plugin-sdk-go v0.146.0
+	github.com/grafana/grafana-plugin-sdk-go v0.147.0
 	github.com/mailru/easyjson v0.7.7
 	github.com/prometheus/client_golang v1.14.0
 	github.com/stretchr/testify v1.8.1
