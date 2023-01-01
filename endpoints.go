@@ -2,10 +2,14 @@ package simplejson
 
 import (
 	"encoding/json"
+	"github.com/go-http-utils/headers"
 	"net/http"
 )
 
 func (s *Server) Search(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set(headers.ContentType, "application/json")
+
 	output, _ := json.Marshal(s.Targets())
 	_, _ = w.Write(output)
 }
@@ -19,10 +23,10 @@ func (s *Server) Query(w http.ResponseWriter, req *http.Request) {
 
 func (s *Server) Annotations(w http.ResponseWriter, req *http.Request) {
 	if req.Method == http.MethodOptions {
-		w.Header().Set("Access-Control-Allow-Headers", "accept, content-type")
-		w.Header().Set("Access-Control-Allow-Methods", "POST")
-		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.WriteHeader(http.StatusOK)
+		w.Header().Set(headers.AccessControlAllowHeaders, "accept, content-type")
+		w.Header().Set(headers.AccessControlAllowMethods, "POST")
+		w.Header().Set(headers.AccessControlAllowOrigin, "*")
 		return
 	}
 
@@ -131,6 +135,9 @@ func handleEndpoint(w http.ResponseWriter, req *http.Request, request json.Unmar
 		http.Error(w, "failed to process request: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set(headers.ContentType, "application/json")
 
 	if err = json.NewEncoder(w).Encode(response); err != nil {
 		http.Error(w, "failed to create response: "+err.Error(), http.StatusInternalServerError)
