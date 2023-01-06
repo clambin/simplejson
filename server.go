@@ -1,12 +1,12 @@
 package simplejson
 
 import (
-	"github.com/clambin/go-common/httpserver"
 	"github.com/clambin/go-common/httpserver/middleware"
 	"github.com/go-chi/chi/v5"
+	middleware2 "github.com/go-chi/chi/v5/middleware"
+	"github.com/go-http-utils/headers"
 	"github.com/prometheus/client_golang/prometheus"
 	"net/http"
-	"time"
 )
 
 // Server receives SimpleJSON requests from Grafana and dispatches them to the handler that serves the specified target.
@@ -15,51 +15,43 @@ type Server struct {
 	Handlers          map[string]Handler
 	prometheusMetrics *middleware.PrometheusMetrics
 	queryMetrics      *QueryMetrics
-	httpServerOptions []httpserver.Option
-	httpServer        *httpserver.Server
 }
 
 var _ prometheus.Collector = &Server{}
 var _ http.Handler = &Server{}
 
-func New(handlers map[string]Handler, options ...Option) (*Server, error) {
-	s := Server{Handlers: handlers}
+func New(handlers map[string]Handler, options ...Option) *Server {
+	s := Server{
+		Handlers: handlers,
+		Router:   chi.NewRouter(),
+	}
 	for _, o := range options {
 		o.apply(&s)
 	}
 
-	s.httpServerOptions = append(s.httpServerOptions, httpserver.WithHandlers{
-		Handlers: []httpserver.Handler{
-			{Path: "/", Handler: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) })},
-			{Path: "/search", Handler: http.HandlerFunc(s.Search), Methods: []string{http.MethodPost}},
-			{Path: "/query", Handler: http.HandlerFunc(s.Query), Methods: []string{http.MethodPost}},
-			{Path: "/annotations", Handler: http.HandlerFunc(s.Annotations), Methods: []string{http.MethodPost, http.MethodOptions}},
-			{Path: "/tag-keys", Handler: http.HandlerFunc(s.TagKeys), Methods: []string{http.MethodPost}},
-			{Path: "/tag-values", Handler: http.HandlerFunc(s.TagValues), Methods: []string{http.MethodPost}},
-		},
+	s.Router.Use(middleware2.Heartbeat("/"))
+	s.Router.Group(func(r chi.Router) {
+		r.Use(middleware2.Logger)
+		if s.prometheusMetrics != nil {
+			r.Use(s.prometheusMetrics.Handle)
+		}
+		r.Post("/search", s.Search)
+		r.Post("/query", s.Query)
+		r.Post("/annotations", s.Annotations)
+		r.Options("/annotations", func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set(headers.AccessControlAllowOrigin, "*")
+			w.Header().Set(headers.AccessControlAllowMethods, "POST")
+			w.Header().Set(headers.AccessControlAllowHeaders, "accept, content-type")
+		})
+		r.Post("/tag-keys", s.TagValues)
+		r.Post("/tag-values", s.TagValues)
 	})
 
-	var err error
-	s.httpServer, err = httpserver.New(s.httpServerOptions...)
-
-	return &s, err
-}
-
-// Serve starts the SimpleJSon Server.
-func (s *Server) Serve() error {
-	return s.httpServer.Serve()
-}
-
-// Shutdown stops a running Server.
-func (s *Server) Shutdown(timeout time.Duration) error {
-	return s.httpServer.Shutdown(timeout)
+	return &s
 }
 
 // Describe implements the prometheus.Collector interface
 func (s *Server) Describe(descs chan<- *prometheus.Desc) {
-	if s.httpServer != nil {
-		s.httpServer.Describe(descs)
-	}
 	if s.prometheusMetrics != nil {
 		s.prometheusMetrics.Describe(descs)
 	}
@@ -70,9 +62,6 @@ func (s *Server) Describe(descs chan<- *prometheus.Desc) {
 
 // Collect implements the prometheus.Collector interface
 func (s *Server) Collect(metrics chan<- prometheus.Metric) {
-	if s.httpServer != nil {
-		s.httpServer.Collect(metrics)
-	}
 	if s.prometheusMetrics != nil {
 		s.prometheusMetrics.Collect(metrics)
 	}

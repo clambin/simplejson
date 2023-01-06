@@ -1,109 +1,100 @@
-package simplejson
+package simplejson_test
 
 import (
 	"bytes"
 	"context"
-	"errors"
 	"flag"
 	"fmt"
+	"github.com/clambin/go-common/httpserver/middleware"
+	"github.com/clambin/simplejson/v5"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/http/httptest"
-	"sync"
 	"testing"
 	"time"
 )
 
 var update = flag.Bool("update", false, "update .golden files")
 
-func TestServer_Run_Shutdown(t *testing.T) {
-	srv, err := New(handlers, WithQueryMetrics{})
-	require.NoError(t, err)
-	r := prometheus.NewRegistry()
-	r.MustRegister(srv)
+func TestNewRouter(t *testing.T) {
+	r := simplejson.New(nil)
 
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		err2 := srv.Serve()
-		assert.True(t, errors.Is(err2, http.ErrServerClosed))
-		wg.Done()
-	}()
+	for _, path := range []string{"/"} {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodGet, path, nil)
+		r.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+	}
 
-	assert.Eventually(t, func() bool {
-		var resp *http.Response
-		resp, err = http.Get(fmt.Sprintf("http://localhost:%d/", srv.httpServer.GetPort()))
-		if err != nil {
-			return false
-		}
-		_ = resp.Body.Close()
-		return resp.StatusCode == http.StatusOK
-	}, time.Second, time.Millisecond)
+	for _, path := range []string{"/search", "/query", "/annotations", "/tag-keys", "/tag-values"} {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodPost, path, nil)
+		r.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+	}
 
-	var resp *http.Response
-	resp, err = http.Post(fmt.Sprintf("http://localhost:%d/search", srv.httpServer.GetPort()), "", nil)
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	_ = resp.Body.Close()
-
-	err = srv.Shutdown(5 * time.Second)
-	require.NoError(t, err)
-	wg.Wait()
-}
-
-func TestServer_Metrics(t *testing.T) {
-	srv, err := New(handlers, WithQueryMetrics{})
-	require.NoError(t, err)
-	r := prometheus.NewRegistry()
-	r.MustRegister(srv)
-
-	req, _ := http.NewRequest(http.MethodPost, "/query", bytes.NewBufferString(`{ "targets": [ { "target": "A", "type": "table" } ] }`))
-	w := httptest.NewRecorder()
-
-	srv.httpServer.ServeHTTP(w, req)
-	require.Equal(t, http.StatusOK, w.Code)
-
-	metrics, err := r.Gather()
-	require.NoError(t, err)
-	require.Len(t, metrics, 1)
-	for _, metric := range metrics {
-		require.Len(t, metric.GetMetric(), 1)
-		switch metric.GetName() {
-		case "simplejson_query_duration_seconds":
-			assert.Equal(t, uint64(1), metric.GetMetric()[0].Histogram.GetSampleCount())
-		default:
-			t.Fatalf("unexpected metric: %s", metric.GetName())
-		}
+	for _, path := range []string{"/annotations"} {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodOptions, path, nil)
+		r.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
 	}
 }
 
-/*
-func TestServer_Metrics(t *testing.T) {
-	r := s.GetRouter()
+func TestNewRouter_Extend(t *testing.T) {
+	r := simplejson.New(nil)
+
+	r.Post("/test", func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte("Hello"))
+	})
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodPost, "/", nil)
+	req, _ := http.NewRequest(http.MethodPost, "/test", nil)
 	r.ServeHTTP(w, req)
-
-	require.Equal(t, http.StatusOK, w.Code)
-
-	m, err := prometheus.DefaultGatherer.Gather()
-	require.NoError(t, err)
-	var found bool
-	for _, entry := range m {
-		if *entry.Name == "simplejson_request_duration_seconds" {
-			require.Equal(t, pcg.MetricType_SUMMARY, *entry.Type)
-			require.NotZero(t, entry.Metric)
-			assert.NotZero(t, entry.Metric[0].Summary.GetSampleCount())
-			found = true
-			break
-		}
-	}
-	assert.True(t, found)
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "Hello", w.Body.String())
 }
-*/
+
+func TestNewRouter_PrometheusMetrics(t *testing.T) {
+	r := simplejson.New(nil, simplejson.WithHTTPMetrics{Option: middleware.PrometheusMetricsOptions{
+		Namespace:   "foo",
+		Subsystem:   "bar",
+		Application: "snafu",
+	}})
+
+	reg := prometheus.NewPedanticRegistry()
+	reg.MustRegister(r)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodPost, "/search", nil)
+	r.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	n, err := testutil.GatherAndCount(reg)
+	require.NoError(t, err)
+	assert.Equal(t, 2, n)
+}
+
+func TestNewRouter_QueryMetrics(t *testing.T) {
+	r := simplejson.New(handlers, simplejson.WithQueryMetrics{Name: "foobar"})
+
+	reg := prometheus.NewPedanticRegistry()
+	reg.MustRegister(r)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodPost, "/query", bytes.NewBufferString(`{ "targets": [ { "target": "A" } ] }`))
+	r.ServeHTTP(w, req)
+	if !assert.Equal(t, http.StatusOK, w.Code) {
+		t.Log(w.Body)
+	}
+
+	n, err := testutil.GatherAndCount(reg)
+	require.NoError(t, err)
+	assert.Equal(t, 1, n)
+}
 
 //
 //
@@ -113,19 +104,19 @@ func TestServer_Metrics(t *testing.T) {
 type testHandler struct {
 	noEndpoints bool
 
-	queryResponse Response
-	annotations   []Annotation
+	queryResponse simplejson.Response
+	annotations   []simplejson.Annotation
 	tags          []string
 	tagValues     map[string][]string
 }
 
-var _ Handler = &testHandler{}
+var _ simplejson.Handler = &testHandler{}
 
 var (
-	queryResponses = map[string]*TimeSeriesResponse{
+	queryResponses = map[string]*simplejson.TimeSeriesResponse{
 		"A": {
 			Target: "A",
-			DataPoints: []DataPoint{
+			DataPoints: []simplejson.DataPoint{
 				{Timestamp: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC), Value: 100},
 				{Timestamp: time.Date(2020, 1, 1, 0, 1, 0, 0, time.UTC), Value: 101},
 				{Timestamp: time.Date(2020, 1, 1, 0, 2, 0, 0, time.UTC), Value: 103},
@@ -133,7 +124,7 @@ var (
 		},
 		"B": {
 			Target: "B",
-			DataPoints: []DataPoint{
+			DataPoints: []simplejson.DataPoint{
 				{Timestamp: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC), Value: 100},
 				{Timestamp: time.Date(2020, 1, 1, 0, 1, 0, 0, time.UTC), Value: 99},
 				{Timestamp: time.Date(2020, 1, 1, 0, 2, 0, 0, time.UTC), Value: 98},
@@ -141,21 +132,21 @@ var (
 		},
 	}
 
-	tableQueryResponse = map[string]*TableResponse{
+	tableQueryResponse = map[string]*simplejson.TableResponse{
 		"C": {
-			Columns: []Column{
-				{Text: "Time", Data: TimeColumn{
+			Columns: []simplejson.Column{
+				{Text: "Time", Data: simplejson.TimeColumn{
 					time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
 					time.Date(2020, 1, 1, 0, 1, 0, 0, time.UTC),
 				}},
-				{Text: "Label", Data: StringColumn{"foo", "bar"}},
-				{Text: "Series A", Data: NumberColumn{42, 43}},
-				{Text: "Series B", Data: NumberColumn{64.5, 100.0}},
+				{Text: "Label", Data: simplejson.StringColumn{"foo", "bar"}},
+				{Text: "Series A", Data: simplejson.NumberColumn{42, 43}},
+				{Text: "Series B", Data: simplejson.NumberColumn{64.5, 100.0}},
 			},
 		},
 	}
 
-	annotations = []Annotation{{
+	annotations = []simplejson.Annotation{{
 		Time:  time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
 		Title: "foo",
 		Text:  "bar",
@@ -169,7 +160,7 @@ var (
 		"bar": {"1", "2"},
 	}
 
-	handlers = map[string]Handler{
+	handlers = map[string]simplejson.Handler{
 		"A": &testHandler{
 			queryResponse: queryResponses["A"],
 			annotations:   annotations,
@@ -184,10 +175,10 @@ var (
 		},
 	}
 
-	s, _ = New(handlers)
+	s = simplejson.New(handlers)
 )
 
-func (handler *testHandler) Endpoints() (endpoints Endpoints) {
+func (handler *testHandler) Endpoints() (endpoints simplejson.Endpoints) {
 	if handler.noEndpoints {
 		return
 	}
@@ -206,11 +197,11 @@ func (handler *testHandler) Endpoints() (endpoints Endpoints) {
 	return
 }
 
-func (handler *testHandler) Query(_ context.Context, _ QueryRequest) (response Response, err error) {
+func (handler *testHandler) Query(_ context.Context, _ simplejson.QueryRequest) (response simplejson.Response, err error) {
 	return handler.queryResponse, nil
 }
 
-func (handler *testHandler) Annotations(_ AnnotationRequest) (annotations []Annotation, err error) {
+func (handler *testHandler) Annotations(_ simplejson.AnnotationRequest) (annotations []simplejson.Annotation, err error) {
 	return handler.annotations, nil
 }
 

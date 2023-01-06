@@ -3,24 +3,21 @@ Package simplejson provides a Go implementation for Grafana's SimpleJSON datasou
 
 # Overview
 
-A simplejson server is an HTTP server that supports one or more handlers.  Each handler can support multiple query targets,
-which can be either timeseries or table query. A handler may support tag key/value pairs, which can be passed to the query
-to adapt its behaviour (e.g. filtering what data should be returned) through 'ad hoc filters'. Finally, a handler can support
-annotations, i.e. a set of timestamps with associated text.
+A simplejson server supports one or more handlers.  Each handler can support multiple query targets,which can be either timeseries or table query.
+A handler may support tag key/value pairs, which can be passed to the query to adapt its behaviour (e.g. filtering what data should be returned)
+through 'ad hoc filters'. Finally, a handler can support annotations, i.e. a set of timestamps with associated text.
 
 # Server
 
-To create a SimpleJSON server, create a Server and run it:
+simplejson.New() creates a SimpleJSON server.  The server is implemented as an http router, compatible with net/http:
 
 	handlers := map[string]simplejson.Handler{
 		"A": &handler{},
 		"B": &handler{table: true},
 	}
-	s, err := simplejson.New(handlers, simplejson.WithHTTPServerOption{Option: httpserver.WithPort{Port: 8080}})
+	r := simplejson.New(handlers, simplejson.WithHTTPServerOption{Option: httpserver.WithPort{Port: 8080}})
 
-	if err == nil {
-		err = s.Serve()
-	}
+	_ = http.ListenAndServe(":8080", r)
 
 This starts a server, listening on port 8080, with one target "my-target", served by myHandler.
 
