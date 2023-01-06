@@ -6,6 +6,7 @@ import (
 	middleware2 "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-http-utils/headers"
 	"github.com/prometheus/client_golang/prometheus"
+	"golang.org/x/exp/slog"
 	"net/http"
 )
 
@@ -31,7 +32,7 @@ func New(handlers map[string]Handler, options ...Option) *Server {
 
 	s.Router.Use(middleware2.Heartbeat("/"))
 	s.Router.Group(func(r chi.Router) {
-		r.Use(middleware2.Logger)
+		r.Use(middleware.Logger(slog.Default()))
 		if s.prometheusMetrics != nil {
 			r.Use(s.prometheusMetrics.Handle)
 		}
