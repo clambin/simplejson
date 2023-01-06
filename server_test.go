@@ -79,7 +79,7 @@ func TestNewRouter_PrometheusMetrics(t *testing.T) {
 }
 
 func TestNewRouter_QueryMetrics(t *testing.T) {
-	r := simplejson.New(handlers, simplejson.WithQueryMetrics{Name: "foobar"})
+	r := simplejson.New(handlers, simplejson.WithQueryMetrics{})
 
 	reg := prometheus.NewPedanticRegistry()
 	reg.MustRegister(r)

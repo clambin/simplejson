@@ -121,17 +121,17 @@ When the dashboard performs a query with a tag selected, that tag & value will b
 
 # Metrics
 
-simplejson exports two Prometheus metrics for performance analytics:
+When provided with the WithQueryMetrics option, simplejson exports two Prometheus metrics for performance analytics:
 
 	simplejson_query_duration_seconds: duration of query requests by target, in seconds
 	simplejson_query_failed_count:     number of failed query requests
 
-The underlying http server is implemented by [github.com/clambin/go-common/httpserver], which exports its own set of metrics.
+The underlying http router uses [PrometheusMetrics], which exports its own set of metrics. See WithHTTPMetrics for details.
 
 # Other topics
 
 For information on query arguments and tags, refer to the documentation for those data structures.
 
-[github.com/clambin/go-common/httpserver]: https://github.com/clambin/go-common/tree/httpserver/httpserver
+[PrometheusMetrics]: https://pkg.go.dev/github.com/clambin/go-common/httpserver/middleware
 */
 package simplejson
