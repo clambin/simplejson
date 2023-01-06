@@ -2,21 +2,25 @@ package simplejson
 
 import (
 	"github.com/clambin/go-common/httpserver"
+	"github.com/clambin/go-common/httpserver/middleware"
+	"github.com/go-chi/chi/v5"
 	"github.com/prometheus/client_golang/prometheus"
 	"net/http"
-	"sort"
 	"time"
 )
 
 // Server receives SimpleJSON requests from Grafana and dispatches them to the handler that serves the specified target.
 type Server struct {
+	chi.Router
 	Handlers          map[string]Handler
+	prometheusMetrics *middleware.PrometheusMetrics
 	queryMetrics      *QueryMetrics
 	httpServerOptions []httpserver.Option
 	httpServer        *httpserver.Server
 }
 
 var _ prometheus.Collector = &Server{}
+var _ http.Handler = &Server{}
 
 func New(handlers map[string]Handler, options ...Option) (*Server, error) {
 	s := Server{Handlers: handlers}
@@ -51,24 +55,28 @@ func (s *Server) Shutdown(timeout time.Duration) error {
 	return s.httpServer.Shutdown(timeout)
 }
 
-// Targets returns a sorted list of supported targets
-func (s *Server) Targets() []string {
-	var targets []string
-	for target := range s.Handlers {
-		targets = append(targets, target)
-	}
-	sort.Strings(targets)
-	return targets
-}
-
 // Describe implements the prometheus.Collector interface
 func (s *Server) Describe(descs chan<- *prometheus.Desc) {
-	s.httpServer.Describe(descs)
-	s.queryMetrics.Describe(descs)
+	if s.httpServer != nil {
+		s.httpServer.Describe(descs)
+	}
+	if s.prometheusMetrics != nil {
+		s.prometheusMetrics.Describe(descs)
+	}
+	if s.queryMetrics != nil {
+		s.queryMetrics.Describe(descs)
+	}
 }
 
 // Collect implements the prometheus.Collector interface
 func (s *Server) Collect(metrics chan<- prometheus.Metric) {
-	s.httpServer.Collect(metrics)
-	s.queryMetrics.Collect(metrics)
+	if s.httpServer != nil {
+		s.httpServer.Collect(metrics)
+	}
+	if s.prometheusMetrics != nil {
+		s.prometheusMetrics.Collect(metrics)
+	}
+	if s.queryMetrics != nil {
+		s.queryMetrics.Collect(metrics)
+	}
 }
