@@ -3,7 +3,7 @@ package simplejson_test
 import (
 	"context"
 	"fmt"
-	"github.com/clambin/simplejson/v5"
+	"github.com/clambin/simplejson/v6"
 	"net/http"
 	"time"
 )

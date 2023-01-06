@@ -6,7 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/clambin/go-common/httpserver/middleware"
-	"github.com/clambin/simplejson/v5"
+	"github.com/clambin/simplejson/v6"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"

@@ -1,7 +1,7 @@
 package data_test
 
 import (
-	"github.com/clambin/simplejson/v5/pkg/data"
+	"github.com/clambin/simplejson/v6/pkg/data"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"strconv"

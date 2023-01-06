@@ -2,7 +2,7 @@ package simplejson_test
 
 import (
 	"encoding/json"
-	"github.com/clambin/simplejson/v5"
+	"github.com/clambin/simplejson/v6"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"os"

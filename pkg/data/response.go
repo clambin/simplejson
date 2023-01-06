@@ -1,7 +1,7 @@
 package data
 
 import (
-	"github.com/clambin/simplejson/v5"
+	"github.com/clambin/simplejson/v6"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 	"time"
 )

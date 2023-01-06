@@ -1,6 +1,6 @@
-module github.com/clambin/simplejson/v5
+module github.com/clambin/simplejson/v6
 
-go 1.18
+go 1.19
 
 require (
 	github.com/clambin/go-common/httpserver v0.4.0
