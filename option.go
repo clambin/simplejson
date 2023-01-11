@@ -2,6 +2,7 @@ package simplejson
 
 import (
 	"github.com/clambin/go-common/httpserver/middleware"
+	"golang.org/x/exp/slog"
 )
 
 // Option specified configuration options for Server
@@ -28,4 +29,13 @@ type WithHTTPMetrics struct {
 
 func (o WithHTTPMetrics) apply(s *Server) {
 	s.prometheusMetrics = middleware.NewPrometheusMetrics(o.Option)
+}
+
+// WithLogger configures the router to use the provided slog Logger for logging. If no logger is provided, slog.Default() is used instead.
+type WithLogger struct {
+	Logger *slog.Logger
+}
+
+func (o WithLogger) apply(s *Server) {
+	s.logger = o.Logger
 }

@@ -11,8 +11,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/exp/slog"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 )
@@ -20,7 +22,10 @@ import (
 var update = flag.Bool("update", false, "update .golden files")
 
 func TestNewRouter(t *testing.T) {
-	r := simplejson.New(nil)
+	logger := slog.New(slog.NewJSONHandler(os.Stdout).WithAttrs([]slog.Attr{
+		slog.String("module", "simplejson"),
+	}))
+	r := simplejson.New(nil, simplejson.WithLogger{Logger: logger})
 
 	for _, path := range []string{"/"} {
 		w := httptest.NewRecorder()

@@ -16,6 +16,7 @@ type Server struct {
 	Handlers          map[string]Handler
 	prometheusMetrics *middleware.PrometheusMetrics
 	queryMetrics      *QueryMetrics
+	logger            *slog.Logger
 }
 
 var _ prometheus.Collector = &Server{}
@@ -25,6 +26,7 @@ func New(handlers map[string]Handler, options ...Option) *Server {
 	s := Server{
 		Handlers: handlers,
 		Router:   chi.NewRouter(),
+		logger:   slog.Default(),
 	}
 	for _, o := range options {
 		o.apply(&s)
@@ -32,7 +34,7 @@ func New(handlers map[string]Handler, options ...Option) *Server {
 
 	s.Router.Use(middleware2.Heartbeat("/"))
 	s.Router.Group(func(r chi.Router) {
-		r.Use(middleware.Logger(slog.Default()))
+		r.Use(middleware.Logger(s.logger))
 		if s.prometheusMetrics != nil {
 			r.Use(s.prometheusMetrics.Handle)
 		}
