@@ -1,9 +1,10 @@
-package simplejson
+package simplejson_test
 
 import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"github.com/clambin/simplejson/v6"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"os"
@@ -27,7 +28,7 @@ func TestRequests(t *testing.T) {
 	]
 }`
 
-	var output QueryRequest
+	var output simplejson.QueryRequest
 
 	err := json.Unmarshal([]byte(input), &output)
 	require.NoError(t, err)
@@ -47,14 +48,14 @@ func TestResponse(t *testing.T) {
 	tests := []struct {
 		name     string
 		pass     bool
-		response Response
+		response simplejson.Response
 	}{
 		{
 			name: "timeseries",
 			pass: true,
-			response: TimeSeriesResponse{
+			response: simplejson.TimeSeriesResponse{
 				Target: "A",
-				DataPoints: []DataPoint{
+				DataPoints: []simplejson.DataPoint{
 					{Value: 100, Timestamp: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)},
 					{Value: 101, Timestamp: time.Date(2020, 1, 1, 1, 0, 0, 0, time.UTC)},
 					{Value: 102, Timestamp: time.Date(2020, 1, 1, 2, 0, 0, 0, time.UTC)},
@@ -64,12 +65,12 @@ func TestResponse(t *testing.T) {
 		{
 			name: "table",
 			pass: true,
-			response: TableResponse{
-				Columns: []Column{
-					{Text: "Time", Data: TimeColumn{time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2020, 1, 1, 0, 1, 0, 0, time.UTC)}},
-					{Text: "Label", Data: StringColumn{"foo", "bar"}},
-					{Text: "Series A", Data: NumberColumn{42, 43}},
-					{Text: "Series B", Data: NumberColumn{64.5, 100.0}},
+			response: simplejson.TableResponse{
+				Columns: []simplejson.Column{
+					{Text: "Time", Data: simplejson.TimeColumn{time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2020, 1, 1, 0, 1, 0, 0, time.UTC)}},
+					{Text: "Label", Data: simplejson.StringColumn{"foo", "bar"}},
+					{Text: "Series A", Data: simplejson.NumberColumn{42, 43}},
+					{Text: "Series B", Data: simplejson.NumberColumn{64.5, 100.0}},
 				},
 			},
 		},
@@ -81,12 +82,12 @@ func TestResponse(t *testing.T) {
 		{
 			name: "invalid",
 			pass: false,
-			response: TableResponse{
-				Columns: []Column{
-					{Text: "Time", Data: TimeColumn{time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2020, 1, 1, 0, 1, 0, 0, time.UTC)}},
-					{Text: "Label", Data: StringColumn{"foo"}},
-					{Text: "Series A", Data: NumberColumn{42, 43}},
-					{Text: "Series B", Data: NumberColumn{64.5, 100.0, 105.0}},
+			response: simplejson.TableResponse{
+				Columns: []simplejson.Column{
+					{Text: "Time", Data: simplejson.TimeColumn{time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC), time.Date(2020, 1, 1, 0, 1, 0, 0, time.UTC)}},
+					{Text: "Label", Data: simplejson.StringColumn{"foo"}},
+					{Text: "Series A", Data: simplejson.NumberColumn{42, 43}},
+					{Text: "Series B", Data: simplejson.NumberColumn{64.5, 100.0, 105.0}},
 				},
 			},
 		},
@@ -136,21 +137,21 @@ func (r combinedResponse) MarshalJSON() ([]byte, error) {
 func makeCombinedQueryResponse() combinedResponse {
 	testDate := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
 
-	dataseries := []TimeSeriesResponse{{
+	dataseries := []simplejson.TimeSeriesResponse{{
 		Target: "A",
-		DataPoints: []DataPoint{
+		DataPoints: []simplejson.DataPoint{
 			{Value: 100, Timestamp: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)},
 			{Value: 101, Timestamp: time.Date(2020, 1, 1, 1, 0, 0, 0, time.UTC)},
 			{Value: 102, Timestamp: time.Date(2020, 1, 1, 2, 0, 0, 0, time.UTC)},
 		},
 	}}
 
-	tables := []TableResponse{{
-		Columns: []Column{
-			{Text: "Time", Data: TimeColumn{testDate, testDate}},
-			{Text: "Label", Data: StringColumn{"foo", "bar"}},
-			{Text: "Series A", Data: NumberColumn{42, 43}},
-			{Text: "Series B", Data: NumberColumn{64.5, 100.0}},
+	tables := []simplejson.TableResponse{{
+		Columns: []simplejson.Column{
+			{Text: "Time", Data: simplejson.TimeColumn{testDate, testDate}},
+			{Text: "Label", Data: simplejson.StringColumn{"foo", "bar"}},
+			{Text: "Series A", Data: simplejson.NumberColumn{42, 43}},
+			{Text: "Series B", Data: simplejson.NumberColumn{64.5, 100.0}},
 		},
 	}}
 
@@ -176,16 +177,16 @@ func BenchmarkTimeSeriesResponse_MarshalJSON(b *testing.B) {
 	}
 }
 
-func buildTimeSeriesResponse(count int) TimeSeriesResponse {
-	var datapoints []DataPoint
+func buildTimeSeriesResponse(count int) simplejson.TimeSeriesResponse {
+	var datapoints []simplejson.DataPoint
 	timestamp := time.Date(2022, time.November, 27, 0, 0, 0, 0, time.UTC)
 	for i := 0; i < count; i++ {
-		datapoints = append(datapoints, DataPoint{
+		datapoints = append(datapoints, simplejson.DataPoint{
 			Timestamp: timestamp,
 			Value:     float64(i),
 		})
 	}
-	return TimeSeriesResponse{Target: "foo", DataPoints: datapoints}
+	return simplejson.TimeSeriesResponse{Target: "foo", DataPoints: datapoints}
 }
 
 func BenchmarkTableResponse_MarshalJSON(b *testing.B) {
@@ -198,7 +199,7 @@ func BenchmarkTableResponse_MarshalJSON(b *testing.B) {
 	}
 }
 
-func buildTableResponse(count int) TableResponse {
+func buildTableResponse(count int) simplejson.TableResponse {
 	var timestamps []time.Time
 	var values []float64
 
@@ -208,8 +209,8 @@ func buildTableResponse(count int) TableResponse {
 		values = append(values, 1.0)
 		timestamp = timestamp.Add(time.Minute)
 	}
-	return TableResponse{Columns: []Column{
-		{Text: "time", Data: TimeColumn(timestamps)},
-		{Text: "value", Data: NumberColumn(values)},
+	return simplejson.TableResponse{Columns: []simplejson.Column{
+		{Text: "time", Data: simplejson.TimeColumn(timestamps)},
+		{Text: "value", Data: simplejson.NumberColumn(values)},
 	}}
 }

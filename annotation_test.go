@@ -1,7 +1,8 @@
-package simplejson
+package simplejson_test
 
 import (
 	"encoding/json"
+	"github.com/clambin/simplejson/v6"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"os"
@@ -12,12 +13,12 @@ import (
 )
 
 func TestAnnotation_MarshalJSON(t *testing.T) {
-	ann := Annotation{
+	ann := simplejson.Annotation{
 		Time:  time.Date(2022, time.January, 23, 0, 0, 0, 0, time.UTC),
 		Title: "foo",
 		Text:  "bar",
 		Tags:  []string{"A", "B"},
-		Request: RequestDetails{
+		Request: simplejson.RequestDetails{
 			Name:       "snafu",
 			Datasource: "datasource",
 			Enable:     true,

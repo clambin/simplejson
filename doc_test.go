@@ -3,21 +3,18 @@ package simplejson_test
 import (
 	"context"
 	"fmt"
-	"github.com/clambin/go-common/httpserver"
-	"github.com/clambin/simplejson/v5"
+	"github.com/clambin/simplejson/v6"
+	"net/http"
 	"time"
 )
 
 func Example() {
-	handlers := map[string]simplejson.Handler{
+	r := simplejson.New(map[string]simplejson.Handler{
 		"A": &handler{},
 		"B": &handler{table: true},
-	}
-	s, err := simplejson.New(handlers, simplejson.WithHTTPServerOption{Option: httpserver.WithPort{Port: 8080}})
+	})
 
-	if err == nil {
-		_ = s.Serve()
-	}
+	_ = http.ListenAndServe(":8080", r)
 }
 
 type handler struct{ table bool }

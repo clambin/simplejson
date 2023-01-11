@@ -1,7 +1,7 @@
 package simplejson
 
 import (
-	"github.com/clambin/go-common/httpserver"
+	"github.com/clambin/go-common/httpserver/middleware"
 )
 
 // Option specified configuration options for Server
@@ -21,11 +21,11 @@ func (o WithQueryMetrics) apply(s *Server) {
 	s.queryMetrics = newQueryMetrics(o.Name)
 }
 
-// WithHTTPServerOption will pass the provided option to the underlying HTTP Server
-type WithHTTPServerOption struct {
-	Option httpserver.Option
+// WithHTTPMetrics will configure the http router to gather statistics on SimpleJson endpoint calls and record them as Prometheus metrics
+type WithHTTPMetrics struct {
+	Option middleware.PrometheusMetricsOptions
 }
 
-func (o WithHTTPServerOption) apply(s *Server) {
-	s.httpServerOptions = append(s.httpServerOptions, o.Option)
+func (o WithHTTPMetrics) apply(s *Server) {
+	s.prometheusMetrics = middleware.NewPrometheusMetrics(o.Option)
 }

@@ -4,13 +4,19 @@ import (
 	"encoding/json"
 	"github.com/go-http-utils/headers"
 	"net/http"
+	"sort"
 )
 
 func (s *Server) Search(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set(headers.ContentType, "application/json")
+	var targets []string
+	for target := range s.Handlers {
+		targets = append(targets, target)
+	}
+	sort.Strings(targets)
 
-	output, _ := json.Marshal(s.Targets())
+	//w.WriteHeader(http.StatusOK)
+	w.Header().Set(headers.ContentType, "application/json")
+	output, _ := json.Marshal(targets)
 	_, _ = w.Write(output)
 }
 
@@ -23,7 +29,7 @@ func (s *Server) Query(w http.ResponseWriter, req *http.Request) {
 
 func (s *Server) Annotations(w http.ResponseWriter, req *http.Request) {
 	if req.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusOK)
+		//w.WriteHeader(http.StatusOK)
 		w.Header().Set(headers.AccessControlAllowHeaders, "accept, content-type")
 		w.Header().Set(headers.AccessControlAllowMethods, "POST")
 		w.Header().Set(headers.AccessControlAllowOrigin, "*")
@@ -136,7 +142,7 @@ func handleEndpoint(w http.ResponseWriter, req *http.Request, request json.Unmar
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	//w.WriteHeader(http.StatusOK)
 	w.Header().Set(headers.ContentType, "application/json")
 
 	if err = json.NewEncoder(w).Encode(response); err != nil {

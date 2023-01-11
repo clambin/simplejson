@@ -1,8 +1,8 @@
 package data_test
 
 import (
-	"github.com/clambin/simplejson/v5"
-	"github.com/clambin/simplejson/v5/pkg/data"
+	"github.com/clambin/simplejson/v6"
+	"github.com/clambin/simplejson/v6/pkg/data"
 	grafanaData "github.com/grafana/grafana-plugin-sdk-go/data"
 	"github.com/stretchr/testify/assert"
 	"testing"
