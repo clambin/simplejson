@@ -110,9 +110,9 @@ func getFieldValues[T any](f *data.Field) (values []T) {
 // DeleteColumn returns a table with the listed columns removed
 func (t Table) DeleteColumn(columns ...string) *Table {
 	fields := make([]*data.Field, 0, len(t.Frame.Fields))
-	s := set.Create(columns)
+	s := set.Create(columns...)
 	for _, field := range t.Frame.Fields {
-		if !s.Has(field.Name) {
+		if !s.Contains(field.Name) {
 			fields = append(fields, field)
 		}
 	}
