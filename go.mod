@@ -3,7 +3,7 @@ module github.com/clambin/simplejson/v6
 go 1.19
 
 require (
-	github.com/clambin/go-common/httpserver v0.4.1
+	github.com/clambin/go-common/httpserver v0.4.2
 	github.com/clambin/go-common/set v0.2.0
 	github.com/go-chi/chi/v5 v5.0.8
 	github.com/go-http-utils/headers v0.0.0-20181008091004-fed159eddc2a
