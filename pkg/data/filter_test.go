@@ -36,3 +36,32 @@ func TestTable_FilterByTime_Empty(t *testing.T) {
 	})
 	assert.NotNil(t, f.Frame)
 }
+
+func BenchmarkFilter(b *testing.B) {
+	var timestamps []time.Time
+	var values []float64
+	var labels []string
+	timestamp := time.Date(2022, 6, 4, 0, 0, 0, 0, time.UTC)
+	start := timestamp
+	for i := 0; i < 1000; i++ {
+		timestamps = append(timestamps, timestamp)
+		values = append(values, float64(i))
+		labels = append(labels, timestamp.String())
+		timestamp = timestamp.Add(24 * time.Hour)
+	}
+	d := data.New(
+		data.Column{Name: "time", Values: timestamps},
+		data.Column{Name: "values", Values: values},
+		data.Column{Name: "labels", Values: labels},
+	)
+	args := simplejson.Args{
+		Range: simplejson.Range{
+			From: start,
+			To:   timestamp,
+		},
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = d.Filter(args)
+	}
+}
