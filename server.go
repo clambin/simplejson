@@ -1,13 +1,14 @@
 package simplejson
 
 import (
+	"net/http"
+
 	"github.com/clambin/go-common/httpserver/middleware"
 	"github.com/go-chi/chi/v5"
 	middleware2 "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-http-utils/headers"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/exp/slog"
-	"net/http"
 )
 
 // Server receives SimpleJSON requests from Grafana and dispatches them to the handler that serves the specified target.
@@ -46,7 +47,7 @@ func New(handlers map[string]Handler, options ...Option) *Server {
 			w.Header().Set(headers.AccessControlAllowMethods, "POST")
 			w.Header().Set(headers.AccessControlAllowHeaders, "accept, content-type")
 		})
-		r.Post("/tag-keys", s.TagValues)
+		r.Post("/tag-keys", s.TagKeys)
 		r.Post("/tag-values", s.TagValues)
 	})
 
