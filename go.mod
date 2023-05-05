@@ -7,7 +7,7 @@ require (
 	github.com/clambin/go-common/set v0.2.0
 	github.com/go-chi/chi/v5 v5.0.8
 	github.com/go-http-utils/headers v0.0.0-20181008091004-fed159eddc2a
-	github.com/grafana/grafana-plugin-sdk-go v0.160.0
+	github.com/grafana/grafana-plugin-sdk-go v0.161.0
 	github.com/mailru/easyjson v0.7.7
 	github.com/prometheus/client_golang v1.15.1
 	github.com/stretchr/testify v1.8.2
