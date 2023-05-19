@@ -10,7 +10,7 @@ require (
 	github.com/grafana/grafana-plugin-sdk-go v0.161.0
 	github.com/mailru/easyjson v0.7.7
 	github.com/prometheus/client_golang v1.15.1
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.3
 	golang.org/x/exp v0.0.0-20230510235704-dd950f8aeaea
 )
 
