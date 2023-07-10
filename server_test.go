@@ -22,7 +22,7 @@ import (
 var update = flag.Bool("update", false, "update .golden files")
 
 func TestNewRouter(t *testing.T) {
-	logger := slog.New(slog.NewJSONHandler(os.Stdout).WithAttrs([]slog.Attr{
+	logger := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{}).WithAttrs([]slog.Attr{
 		slog.String("module", "simplejson"),
 	}))
 	r := simplejson.New(nil, simplejson.WithLogger{Logger: logger})
