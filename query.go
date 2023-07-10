@@ -15,6 +15,7 @@ import (
 type QueryRequest struct {
 	Targets []Target `json:"targets"`
 	QueryArgs
+	Values map[string][]string `json:"values"`
 }
 
 // Target specifies the requested target name and type.
