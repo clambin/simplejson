@@ -15,15 +15,15 @@ import (
 type QueryRequest struct {
 	Targets []Target `json:"targets"`
 	QueryArgs
-	Values map[string][]string `json:"values"`
 }
 
 // Target specifies the requested target name and type.
 //
 //easyjson:skip
 type Target struct {
-	Name string `json:"target"` // name of the target.
-	Type string `json:"type"`   // "timeserie" or "" for timeseries. "table" for table queries.
+	Name string      `json:"target"` // name of the target.
+	Type string      `json:"type"`   // "timeserie" or "" for timeseries. "table" for table queries.
+	Data interface{} `json:"data,omitempty"`
 }
 
 // QueryArgs contains the arguments for a Query.
