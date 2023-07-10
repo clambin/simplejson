@@ -11,6 +11,3 @@ Basic Go implementation of a Grafana SimpleJSON server.
 Works with:
 
 * [Grafana Simple JSON Datasource](https://grafana.com/grafana/plugins/grafana-simple-json-datasource)
-* [JSON API Grafana Datasource](https://grafana.com/grafana/plugins/simpod-json-datasource)
-
-Note: the latter does not call the /annotations endpoint. Return annotations through the /query endpoint instead. 
