@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/clambin/go-common/httpserver v0.5.0
 	github.com/clambin/go-common/set v0.2.0
-	github.com/go-chi/chi/v5 v5.0.8
+	github.com/go-chi/chi/v5 v5.0.10
 	github.com/go-http-utils/headers v0.0.0-20181008091004-fed159eddc2a
 	github.com/grafana/grafana-plugin-sdk-go v0.168.0
 	github.com/mailru/easyjson v0.7.7
