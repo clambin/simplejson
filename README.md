@@ -6,6 +6,14 @@
 ![GitHub](https://img.shields.io/github/license/clambin/simplejson?style=plastic)
 [![GoDoc](https://pkg.go.dev/badge/github.com/clambin/simplejson?utm_source=godoc)](http://pkg.go.dev/github.com/clambin/simplejson/v6)
 
+
+# DEPRECATED
+
+> This package has been deprecated, as Grafana Simple JSON Datasource is no longer maintained by the Grafana team.
+> 
+> As a replacement, please use [grafana-json-server](https://github.com/clambin/grafana-json-server), which works 
+> with simPod's [Grafana JSON datasource](https://github.com/simPod/GrafanaJsonDatasource). 
+
 Basic Go implementation of a Grafana SimpleJSON server.
 
 Works with:
